@@ -5,7 +5,7 @@ import React from "react"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { X, Trash2 } from "lucide-react"
-import type { AccountItem, Transaction, FinancialGoal } from "@/lib/portfolio-data"
+import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
 
 interface ModalProps {
   isOpen: boolean
@@ -322,6 +322,190 @@ export function TransactionModal({
               <option value="failed">Failed</option>
             </select>
           </div>
+        </div>
+        <div className="flex gap-2 pt-2">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                onDelete()
+                onClose()
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+          >
+            {initialData ? "Update" : "Add"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// Stock Action Modal
+interface StockActionModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSave: (action: Omit<StockAction, "id">) => void
+  onDelete?: () => void
+  initialData?: StockAction
+}
+
+export function StockActionModal({
+  isOpen,
+  onClose,
+  onSave,
+  onDelete,
+  initialData,
+}: StockActionModalProps) {
+  const getTodayLabel = () =>
+    new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  const [symbol, setSymbol] = useState(initialData?.symbol || "")
+  const [action, setAction] = useState<StockAction["action"]>(initialData?.action || "buy")
+  const [shares, setShares] = useState(initialData?.shares.toString() || "1")
+  const [price, setPrice] = useState(initialData?.price.replace("$", "").replace(",", "") || "")
+  const [tradeDate, setTradeDate] = useState(initialData?.tradeDate || "")
+  const [status, setStatus] = useState<StockAction["status"]>(initialData?.status || "executed")
+
+  useEffect(() => {
+    if (initialData) {
+      setSymbol(initialData.symbol)
+      setAction(initialData.action)
+      setShares(initialData.shares.toString())
+      setPrice(initialData.price.replace("$", "").replace(/,/g, ""))
+      setTradeDate(initialData.tradeDate)
+      setStatus(initialData.status)
+    } else {
+      setSymbol("")
+      setAction("buy")
+      setShares("1")
+      setPrice("")
+      setTradeDate(getTodayLabel())
+      setStatus("executed")
+    }
+  }, [initialData, isOpen])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const formattedPrice = `$${parseFloat(price).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`
+    onSave({
+      symbol: symbol.toUpperCase(),
+      action,
+      shares: parseFloat(shares),
+      price: formattedPrice,
+      tradeDate: tradeDate || getTodayLabel(),
+      status,
+    })
+    onClose()
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Trade" : "Add Trade"}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Ticker Symbol
+          </label>
+          <input
+            type="text"
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            required
+            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            placeholder="AAPL"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              Action
+            </label>
+            <select
+              value={action}
+              onChange={(e) => setAction(e.target.value as StockAction["action"])}
+              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            >
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              Shares
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={shares}
+              onChange={(e) => setShares(e.target.value)}
+              required
+              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              placeholder="10"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              Price per Share
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+              <input
+                type="number"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+                className="w-full pl-7 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              Trade Date
+            </label>
+            <input
+              type="text"
+              value={tradeDate}
+              onChange={(e) => setTradeDate(e.target.value)}
+              required
+              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              placeholder="Mar 2, 2026"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Status
+          </label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as StockAction["status"])}
+            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+          >
+            <option value="executed">Executed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
         <div className="flex gap-2 pt-2">
           {onDelete && (

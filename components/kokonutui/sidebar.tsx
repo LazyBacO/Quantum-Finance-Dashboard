@@ -89,7 +89,7 @@ export default function Sidebar() {
                     AI Advisor
                   </NavItem>
                   <NavItem href="#accounts" icon={BarChart2}>
-                    Analytics
+                    Accounts Overview
                   </NavItem>
                 </div>
               </div>
@@ -102,8 +102,8 @@ export default function Sidebar() {
                   <NavItem href="#accounts" icon={Wallet}>
                     Accounts
                   </NavItem>
-                  <NavItem href="#accounts" icon={TrendingUp}>
-                    Investments
+                  <NavItem href="#stock-actions" icon={TrendingUp}>
+                    Stock Actions
                   </NavItem>
                   <NavItem href="#transactions" icon={Receipt}>
                     Transactions

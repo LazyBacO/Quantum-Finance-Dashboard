@@ -1,10 +1,11 @@
 import { streamText, convertToModelMessages } from "ai"
-import type { AccountItem, Transaction, FinancialGoal } from "@/lib/portfolio-data"
+import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
 
 interface PortfolioData {
   accounts: AccountItem[]
   transactions: Transaction[]
   goals: FinancialGoal[]
+  stockActions: StockAction[]
   totalBalance: string
 }
 
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
     accounts: [],
     transactions: [],
     goals: [],
+    stockActions: [],
     totalBalance: "$0.00",
   }
 
@@ -68,6 +70,9 @@ ${portfolio.transactions.map((t: Transaction) => `- ${t.title}: ${t.type === "in
 
 ### Financial Goals:
 ${portfolio.goals.map((g: FinancialGoal) => `- ${g.title}: Target ${g.amount || "N/A"}, Progress: ${g.progress || 0}%, Status: ${g.status}, ${g.date}`).join("\n") || "No goals set"}
+
+### Stock Market Actions:
+${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpperCase()}: ${a.shares} shares @ ${a.price} (${a.status}) - ${a.tradeDate}`).join("\n") || "No stock actions"}
 
 ## Your Role:
 1. Analyze the user's portfolio and provide personalized investment advice

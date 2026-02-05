@@ -5,9 +5,11 @@ import {
   ACCOUNTS as DEFAULT_ACCOUNTS,
   TRANSACTIONS as DEFAULT_TRANSACTIONS,
   FINANCIAL_GOALS as DEFAULT_GOALS,
+  STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
   type AccountItem,
   type Transaction,
   type FinancialGoal,
+  type StockAction,
 } from "./portfolio-data"
 
 interface PortfolioContextType {
@@ -31,6 +33,12 @@ interface PortfolioContextType {
   updateGoal: (id: string, goal: Partial<FinancialGoal>) => void
   deleteGoal: (id: string) => void
 
+  // Stock Actions
+  stockActions: StockAction[]
+  addStockAction: (action: Omit<StockAction, "id">) => void
+  updateStockAction: (id: string, action: Partial<StockAction>) => void
+  deleteStockAction: (id: string) => void
+
   // Computed values
   totalBalance: string
 }
@@ -41,6 +49,13 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<AccountItem[]>(DEFAULT_ACCOUNTS)
   const [transactions, setTransactions] = useState<Transaction[]>(DEFAULT_TRANSACTIONS)
   const [goals, setGoals] = useState<FinancialGoal[]>(DEFAULT_GOALS)
+  const [stockActions, setStockActions] = useState<StockAction[]>(DEFAULT_STOCK_ACTIONS)
+
+  const formatCurrency = useCallback(
+    (value: number) =>
+      `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    []
+  )
 
   // Account operations
   const addAccount = useCallback((account: Omit<AccountItem, "id">) => {
@@ -60,6 +75,34 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const deleteAccount = useCallback((id: string) => {
     setAccounts((prev) => prev.filter((account) => account.id !== id))
   }, [])
+
+  const adjustAccountBalance = useCallback(
+    (id: string, amount: number, type: "deposit" | "withdraw") => {
+      setAccounts((prev) =>
+        prev.map((account) => {
+          if (account.id !== id) return account
+          const current = parseFloat(account.balance.replace(/[$,]/g, ""))
+          const next = type === "deposit" ? current + amount : current - amount
+          return { ...account, balance: formatCurrency(next) }
+        })
+      )
+    },
+    [formatCurrency]
+  )
+
+  const transferBetweenAccounts = useCallback(
+    (fromId: string, toId: string, amount: number) => {
+      setAccounts((prev) =>
+        prev.map((account) => {
+          if (account.id !== fromId && account.id !== toId) return account
+          const current = parseFloat(account.balance.replace(/[$,]/g, ""))
+          const next = account.id === fromId ? current - amount : current + amount
+          return { ...account, balance: formatCurrency(next) }
+        })
+      )
+    },
+    [formatCurrency]
+  )
 
   // Transaction operations
   const addTransaction = useCallback((transaction: Omit<Transaction, "id">) => {
@@ -101,6 +144,25 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setGoals((prev) => prev.filter((goal) => goal.id !== id))
   }, [])
 
+  // Stock actions operations
+  const addStockAction = useCallback((action: Omit<StockAction, "id">) => {
+    const newAction: StockAction = {
+      ...action,
+      id: Date.now().toString(),
+    }
+    setStockActions((prev) => [newAction, ...prev])
+  }, [])
+
+  const updateStockAction = useCallback((id: string, updates: Partial<StockAction>) => {
+    setStockActions((prev) =>
+      prev.map((action) => (action.id === id ? { ...action, ...updates } : action))
+    )
+  }, [])
+
+  const deleteStockAction = useCallback((id: string) => {
+    setStockActions((prev) => prev.filter((action) => action.id !== id))
+  }, [])
+
   // Computed total balance
   const totalBalance = useMemo(() => {
     const total = accounts.reduce((sum, account) => {
@@ -119,6 +181,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       addAccount,
       updateAccount,
       deleteAccount,
+      adjustAccountBalance,
+      transferBetweenAccounts,
       transactions,
       addTransaction,
       updateTransaction,
@@ -127,6 +191,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       addGoal,
       updateGoal,
       deleteGoal,
+      stockActions,
+      addStockAction,
+      updateStockAction,
+      deleteStockAction,
       totalBalance,
     }),
     [
@@ -134,6 +202,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       addAccount,
       updateAccount,
       deleteAccount,
+      adjustAccountBalance,
+      transferBetweenAccounts,
       transactions,
       addTransaction,
       updateTransaction,
@@ -142,6 +212,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       addGoal,
       updateGoal,
       deleteGoal,
+      stockActions,
+      addStockAction,
+      updateStockAction,
+      deleteStockAction,
       totalBalance,
     ]
   )

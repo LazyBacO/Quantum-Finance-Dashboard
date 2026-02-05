@@ -17,7 +17,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { accounts, transactions, goals, totalBalance } = usePortfolio()
+  const { accounts, transactions, goals, totalBalance, stockActions } = usePortfolio()
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
@@ -30,6 +30,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
             accounts,
             transactions,
             goals,
+            stockActions,
             totalBalance,
           },
         },
