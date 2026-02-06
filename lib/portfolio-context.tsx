@@ -21,19 +21,24 @@ const STORAGE_KEYS = {
   LAST_SAVED: "portfolio_last_saved",
 }
 
+const canUseStorage = () =>
+  typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+
 // Helper functions for localStorage
 const saveToStorage = (key: string, data: unknown) => {
+  if (!canUseStorage()) return
   try {
-    localStorage.setItem(key, JSON.stringify(data))
-    localStorage.setItem(STORAGE_KEYS.LAST_SAVED, new Date().toISOString())
+    window.localStorage.setItem(key, JSON.stringify(data))
+    window.localStorage.setItem(STORAGE_KEYS.LAST_SAVED, new Date().toISOString())
   } catch (error) {
     console.error(`Failed to save ${key} to localStorage:`, error)
   }
 }
 
 const loadFromStorage = (key: string, fallback: unknown) => {
+  if (!canUseStorage()) return fallback
   try {
-    const stored = localStorage.getItem(key)
+    const stored = window.localStorage.getItem(key)
     return stored ? JSON.parse(stored) : fallback
   } catch (error) {
     console.error(`Failed to load ${key} from localStorage:`, error)
@@ -112,16 +117,14 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   }, [stockActions])
 
   // Track last saved time from localStorage
-  const [lastSaved, setLastSaved] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEYS.LAST_SAVED)
-    }
-    return null
-  })
+  const [lastSaved, setLastSaved] = useState<string | null>(() =>
+    canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null
+  )
 
   // Update lastSaved whenever any data changes
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LAST_SAVED)
+    if (!canUseStorage()) return
+    const saved = window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED)
     setLastSaved(saved)
   }, [accounts, transactions, goals, stockActions])
 
