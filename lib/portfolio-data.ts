@@ -66,6 +66,20 @@ export interface RiskMetric {
   note?: string
 }
 
+export interface NetWorthHistoryPoint {
+  id: string
+  label: string
+  value: number
+}
+
+export interface NetWorthBreakdownItem {
+  id: string
+  label: string
+  value: number
+  description?: string
+  colorClass?: string
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -337,6 +351,76 @@ export const RISK_METRICS: RiskMetric[] = [
     value: "0.86",
     note: "RF 2.1%",
   },
+]
+
+export const ASSET_BREAKDOWN: NetWorthBreakdownItem[] = [
+  {
+    id: "cash",
+    label: "Cash",
+    description: "Comptes courants & épargne",
+    value: 12450,
+    colorClass: "bg-emerald-500",
+  },
+  {
+    id: "investments",
+    label: "Investissements",
+    description: "ETF, actions, obligations",
+    value: 38400,
+    colorClass: "bg-blue-500",
+  },
+  {
+    id: "real-estate",
+    label: "Immobilier",
+    description: "Résidence principale",
+    value: 185000,
+    colorClass: "bg-purple-500",
+  },
+  {
+    id: "other-assets",
+    label: "Autres",
+    description: "Véhicules, participations",
+    value: 12500,
+    colorClass: "bg-amber-500",
+  },
+]
+
+export const LIABILITY_BREAKDOWN: NetWorthBreakdownItem[] = [
+  {
+    id: "mortgage",
+    label: "Crédits",
+    description: "Crédit immobilier",
+    value: 142000,
+    colorClass: "bg-rose-500",
+  },
+  {
+    id: "credit-cards",
+    label: "Cartes",
+    description: "Cartes de crédit",
+    value: 5200,
+    colorClass: "bg-orange-500",
+  },
+  {
+    id: "loans",
+    label: "Prêts",
+    description: "Prêt auto & personnel",
+    value: 9800,
+    colorClass: "bg-red-500",
+  },
+]
+
+export const NET_WORTH_HISTORY: NetWorthHistoryPoint[] = [
+  { id: "jan", label: "Jan", value: 82000 },
+  { id: "feb", label: "Fév", value: 84500 },
+  { id: "mar", label: "Mar", value: 87250 },
+  { id: "apr", label: "Avr", value: 90500 },
+  { id: "may", label: "Mai", value: 93200 },
+  { id: "jun", label: "Juin", value: 96800 },
+  { id: "jul", label: "Juil", value: 100400 },
+  { id: "aug", label: "Août", value: 103250 },
+  { id: "sep", label: "Sep", value: 108900 },
+  { id: "oct", label: "Oct", value: 112600 },
+  { id: "nov", label: "Nov", value: 116300 },
+  { id: "dec", label: "Déc", value: 120150 },
 ]
 
 export const TOTAL_BALANCE = "$26,540.25"

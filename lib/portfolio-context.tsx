@@ -5,13 +5,18 @@ import {
   ACCOUNTS as DEFAULT_ACCOUNTS,
   ALLOCATION_ACTUAL as DEFAULT_ALLOCATION_ACTUAL,
   ALLOCATION_TARGETS as DEFAULT_ALLOCATION_TARGETS,
+  ASSET_BREAKDOWN as DEFAULT_ASSET_BREAKDOWN,
   PERFORMANCE_METRICS as DEFAULT_PERFORMANCE_METRICS,
   RISK_METRICS as DEFAULT_RISK_METRICS,
+  LIABILITY_BREAKDOWN as DEFAULT_LIABILITY_BREAKDOWN,
+  NET_WORTH_HISTORY as DEFAULT_NET_WORTH_HISTORY,
   TRANSACTIONS as DEFAULT_TRANSACTIONS,
   FINANCIAL_GOALS as DEFAULT_GOALS,
   STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
   type AllocationActual,
   type AllocationTarget,
+  type NetWorthBreakdownItem,
+  type NetWorthHistoryPoint,
   type PerformanceMetric,
   type RiskMetric,
   type AccountItem,
@@ -150,6 +155,9 @@ interface PortfolioContextType {
   allocationTargets: AllocationTarget[]
   performanceMetrics: PerformanceMetric[]
   riskMetrics: RiskMetric[]
+  netWorthHistory: NetWorthHistoryPoint[]
+  assetBreakdown: NetWorthBreakdownItem[]
+  liabilityBreakdown: NetWorthBreakdownItem[]
 
   // Computed values
   totalBalance: string
@@ -339,6 +347,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       allocationTargets: DEFAULT_ALLOCATION_TARGETS,
       performanceMetrics: DEFAULT_PERFORMANCE_METRICS,
       riskMetrics: DEFAULT_RISK_METRICS,
+      netWorthHistory: DEFAULT_NET_WORTH_HISTORY,
+      assetBreakdown: DEFAULT_ASSET_BREAKDOWN,
+      liabilityBreakdown: DEFAULT_LIABILITY_BREAKDOWN,
       totalBalance,
       lastSaved,
     }),
