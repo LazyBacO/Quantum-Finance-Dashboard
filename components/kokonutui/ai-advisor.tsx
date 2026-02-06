@@ -24,7 +24,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
       api: "/api/chat",
       prepareSendMessagesRequest: ({ id, messages }) => ({
         body: {
-          message: messages[messages.length - 1],
+          messages,
           id,
           apiKey: window.localStorage.getItem("openai_api_key") || undefined,
           portfolioData: {
@@ -101,7 +101,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">AI Financial Advisor</h2>
-            <p className="text-xs text-muted-foreground">Powered by GPT-4o Mini</p>
+            <p className="text-xs text-muted-foreground">Powered by ChatGPT 5.2</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

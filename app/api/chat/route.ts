@@ -1,4 +1,5 @@
 import { streamText, convertToModelMessages } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
 import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
 
 interface PortfolioData {
@@ -83,6 +84,7 @@ ${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpp
 6. Provide insights on spending patterns based on transactions
 
 ## Guidelines:
+- Respond in French unless the user explicitly asks for another language.
 - Be specific and refer to actual numbers from their portfolio
 - Provide actionable recommendations
 - Consider risk tolerance based on their current allocation
@@ -93,10 +95,24 @@ ${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpp
 
 Remember: You are their trusted financial advisor with full visibility into their finances. Provide personalized, data-driven advice.`
 
+  const key = apiKey || process.env.OPENAI_API_KEY
+
+  if (!key) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Missing OpenAI API key. Set an API key in localStorage under 'openai_api_key' or configure the server with OPENAI_API_KEY.",
+      }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    )
+  }
+
+  const openai = createOpenAI({ apiKey: key })
+  const modelId = process.env.OPENAI_MODEL || "gpt-5.2"
+
   const result = streamText({
-    model: "openai/gpt-5.2",
+    model: openai(modelId),
     system: systemPrompt,
-    apiKey: apiKey || process.env.OPENAI_API_KEY,
     messages: await convertToModelMessages(messages),
   })
 

@@ -420,7 +420,7 @@ export function StockActionModal({
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Trade" : "Add Trade"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Ticker Symbol
           </label>
           <input
@@ -428,26 +428,26 @@ export function StockActionModal({
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
             required
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             placeholder="AAPL"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Action
             </label>
             <select
               value={action}
               onChange={(e) => setAction(e.target.value as StockAction["action"])}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <option value="buy">Buy</option>
               <option value="sell">Sell</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Shares
             </label>
             <input
@@ -456,31 +456,31 @@ export function StockActionModal({
               value={shares}
               onChange={(e) => setShares(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               placeholder="10"
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Price per Share
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <input
                 type="number"
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 required
-                className="w-full pl-7 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                className="w-full pl-7 pr-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                 placeholder="0.00"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Trade Date
             </label>
             <input
@@ -488,19 +488,19 @@ export function StockActionModal({
               value={tradeDate}
               onChange={(e) => setTradeDate(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               placeholder="Mar 2, 2026"
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Status
           </label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as StockAction["status"])}
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
             <option value="executed">Executed</option>
             <option value="pending">Pending</option>
@@ -524,13 +524,13 @@ export function StockActionModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             {initialData ? "Update" : "Add"}
           </button>
@@ -602,7 +602,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Goal" : "Add Goal"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Goal Name
           </label>
           <input
@@ -610,12 +610,12 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             placeholder="Emergency Fund"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Description
           </label>
           <input
@@ -623,29 +623,29 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
             required
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             placeholder="Save 3 months of expenses"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Target Amount
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <input
                 type="number"
                 step="1"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-7 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                className="w-full pl-7 pr-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                 placeholder="10000"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Target Date
             </label>
             <input
@@ -653,20 +653,20 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               placeholder="Dec 2026"
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Category
             </label>
             <select
               value={iconStyle}
               onChange={(e) => setIconStyle(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <option value="savings">Savings</option>
               <option value="investment">Investment</option>
@@ -674,13 +674,13 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as FinancialGoal["status"])}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <option value="pending">Pending</option>
               <option value="in-progress">In Progress</option>
@@ -689,7 +689,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Progress: {progress}%
           </label>
           <input
@@ -698,7 +698,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
             max="100"
             value={progress}
             onChange={(e) => setProgress(e.target.value)}
-            className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 bg-accent/60 rounded-lg appearance-none cursor-pointer"
           />
         </div>
         <div className="flex gap-2 pt-2">
@@ -718,13 +718,13 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             {initialData ? "Update" : "Add"}
           </button>
