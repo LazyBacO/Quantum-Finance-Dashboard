@@ -80,6 +80,31 @@ export interface NetWorthBreakdownItem {
   colorClass?: string
 }
 
+export interface BudgetCategory {
+  id: string
+  label: string
+  allocation: number
+  planned: number
+  spent: number
+  colorClass: string
+}
+
+export interface CashflowForecastPoint {
+  id: string
+  label: string
+  income: number
+  expenses: number
+}
+
+export interface AlertThreshold {
+  id: string
+  label: string
+  description?: string
+  threshold: number
+  current: number
+  status: "ok" | "warning" | "critical"
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -421,6 +446,69 @@ export const NET_WORTH_HISTORY: NetWorthHistoryPoint[] = [
   { id: "oct", label: "Oct", value: 112600 },
   { id: "nov", label: "Nov", value: 116300 },
   { id: "dec", label: "Déc", value: 120150 },
+]
+
+export const BUDGETS: BudgetCategory[] = [
+  {
+    id: "essentials",
+    label: "Essentiels",
+    allocation: 50,
+    planned: 3200,
+    spent: 2980,
+    colorClass: "bg-emerald-500",
+  },
+  {
+    id: "lifestyle",
+    label: "Style de vie",
+    allocation: 30,
+    planned: 1900,
+    spent: 2140,
+    colorClass: "bg-amber-500",
+  },
+  {
+    id: "savings",
+    label: "Épargne",
+    allocation: 20,
+    planned: 1300,
+    spent: 980,
+    colorClass: "bg-blue-500",
+  },
+]
+
+export const CASHFLOW_FORECAST: CashflowForecastPoint[] = [
+  { id: "apr", label: "Avr", income: 5200, expenses: 4020 },
+  { id: "may", label: "Mai", income: 5300, expenses: 4175 },
+  { id: "jun", label: "Juin", income: 5400, expenses: 4280 },
+  { id: "jul", label: "Juil", income: 5250, expenses: 4410 },
+  { id: "aug", label: "Août", income: 5500, expenses: 4525 },
+  { id: "sep", label: "Sep", income: 5600, expenses: 4380 },
+]
+
+export const ALERTS_THRESHOLDS: AlertThreshold[] = [
+  {
+    id: "dining",
+    label: "Restaurants & sorties",
+    description: "Seuil mensuel",
+    threshold: 650,
+    current: 720,
+    status: "critical",
+  },
+  {
+    id: "subscriptions",
+    label: "Abonnements",
+    description: "Seuil mensuel",
+    threshold: 120,
+    current: 95,
+    status: "ok",
+  },
+  {
+    id: "shopping",
+    label: "Shopping",
+    description: "Seuil mensuel",
+    threshold: 500,
+    current: 460,
+    status: "warning",
+  },
 ]
 
 export const TOTAL_BALANCE = "$26,540.25"

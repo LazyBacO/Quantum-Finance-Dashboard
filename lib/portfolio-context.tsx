@@ -6,6 +6,8 @@ import {
   ALLOCATION_ACTUAL as DEFAULT_ALLOCATION_ACTUAL,
   ALLOCATION_TARGETS as DEFAULT_ALLOCATION_TARGETS,
   ASSET_BREAKDOWN as DEFAULT_ASSET_BREAKDOWN,
+  BUDGETS as DEFAULT_BUDGETS,
+  CASHFLOW_FORECAST as DEFAULT_CASHFLOW_FORECAST,
   PERFORMANCE_METRICS as DEFAULT_PERFORMANCE_METRICS,
   RISK_METRICS as DEFAULT_RISK_METRICS,
   LIABILITY_BREAKDOWN as DEFAULT_LIABILITY_BREAKDOWN,
@@ -13,6 +15,7 @@ import {
   TRANSACTIONS as DEFAULT_TRANSACTIONS,
   FINANCIAL_GOALS as DEFAULT_GOALS,
   STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
+  ALERTS_THRESHOLDS as DEFAULT_ALERTS_THRESHOLDS,
   type AllocationActual,
   type AllocationTarget,
   type NetWorthBreakdownItem,
@@ -23,6 +26,9 @@ import {
   type Transaction,
   type FinancialGoal,
   type StockAction,
+  type BudgetCategory,
+  type CashflowForecastPoint,
+  type AlertThreshold,
 } from "./portfolio-data"
 
 // LocalStorage keys for persistence
@@ -158,6 +164,9 @@ interface PortfolioContextType {
   netWorthHistory: NetWorthHistoryPoint[]
   assetBreakdown: NetWorthBreakdownItem[]
   liabilityBreakdown: NetWorthBreakdownItem[]
+  budgets: BudgetCategory[]
+  cashflowForecast: CashflowForecastPoint[]
+  alertsThresholds: AlertThreshold[]
 
   // Computed values
   totalBalance: string
@@ -350,6 +359,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       netWorthHistory: DEFAULT_NET_WORTH_HISTORY,
       assetBreakdown: DEFAULT_ASSET_BREAKDOWN,
       liabilityBreakdown: DEFAULT_LIABILITY_BREAKDOWN,
+      budgets: DEFAULT_BUDGETS,
+      cashflowForecast: DEFAULT_CASHFLOW_FORECAST,
+      alertsThresholds: DEFAULT_ALERTS_THRESHOLDS,
       totalBalance,
       lastSaved,
     }),
