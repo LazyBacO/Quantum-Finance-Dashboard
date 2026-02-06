@@ -35,6 +35,7 @@ export default function Profile01({
   subscription = defaultProfile.subscription,
 }: Partial<Profile01Props> = defaultProfile) {
   const [apiKey, setApiKey] = useState("")
+  const [showApiKey, setShowApiKey] = useState(false)
   const [emailAlerts, setEmailAlerts] = useState(true)
   const [pushAlerts, setPushAlerts] = useState(false)
   const [weeklyReport, setWeeklyReport] = useState(true)
@@ -55,6 +56,8 @@ export default function Profile01({
       window.localStorage.removeItem("openai_api_key")
     }
   }, [apiKey])
+
+  const apiKeyIsValid = apiKey.length === 0 || apiKey.startsWith("sk-")
 
   const menuItems: MenuItem[] = [
     {
@@ -171,17 +174,37 @@ export default function Profile01({
 
               <label className="space-y-1 text-sm">
                 <span className="text-xs text-zinc-500 dark:text-zinc-400">ChatGPT API Key</span>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
-                  className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type={showApiKey ? "text" : "password"}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk-..."
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey((current) => !current)}
+                    className="text-xs font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+                  >
+                    {showApiKey ? "Masquer" : "Afficher"}
+                  </button>
+                </div>
+                {!apiKeyIsValid && (
+                  <span className="text-[11px] text-rose-500">La clé doit commencer par “sk-”.</span>
+                )}
                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
                   Stored locally in your browser to enable the latest ChatGPT model for finance
                   agent responses.
                 </span>
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
+                  Create an OpenAI API key
+                </a>
               </label>
 
               <label className="space-y-1 text-sm">
