@@ -1,5 +1,6 @@
 import { streamText, convertToModelMessages } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
+
 import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
 
 interface PortfolioData {
