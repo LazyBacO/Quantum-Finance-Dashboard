@@ -14,22 +14,26 @@ All portfolio data is automatically saved whenever changes are made:
 
 ### Storage
 - **Location**: Browser's localStorage
-- **Keys**: `portfolio_accounts`, `portfolio_transactions`, `portfolio_goals`, `portfolio_stock_actions`
+- **Primary key**: `portfolio_state_v1` (single, versioned payload)
+- **Backup key**: `portfolio_state_backup_v1` (last known good payload)
+- **Legacy keys**: `portfolio_accounts`, `portfolio_transactions`, `portfolio_goals`, `portfolio_stock_actions` (auto-migrated)
 - **Timestamp**: `portfolio_last_saved` stores the ISO timestamp of the last save
 
 ### Auto-Save Mechanism
-The `PortfolioProvider` in [lib/portfolio-context.tsx](../lib/portfolio-context.tsx) uses React's `useEffect` hooks to automatically save data whenever any state changes:
+The `PortfolioProvider` in [lib/portfolio-context.tsx](../lib/portfolio-context.tsx) uses a single `useEffect` hook to atomically save all data whenever any state changes:
 
 ```tsx
-// Each data type has its own auto-save effect
 useEffect(() => {
-  saveToStorage(STORAGE_KEYS.ACCOUNTS, accounts)
-}, [accounts])
-
-useEffect(() => {
-  saveToStorage(STORAGE_KEYS.TRANSACTIONS, transactions)
-}, [transactions])
-// ... and so on for goals and stock actions
+  const state = {
+    version: 1,
+    accounts,
+    transactions,
+    goals,
+    stockActions,
+    lastSaved: new Date().toISOString(),
+  }
+  savePortfolioState(state)
+}, [accounts, transactions, goals, stockActions])
 ```
 
 ## Using the Save Status Hook
@@ -66,10 +70,8 @@ If data is corrupted or you want to reset to defaults:
 
 1. **Clear localStorage** (in browser console):
    ```javascript
-   localStorage.removeItem('portfolio_accounts')
-   localStorage.removeItem('portfolio_transactions')
-   localStorage.removeItem('portfolio_goals')
-   localStorage.removeItem('portfolio_stock_actions')
+   localStorage.removeItem('portfolio_state_v1')
+   localStorage.removeItem('portfolio_state_backup_v1')
    localStorage.removeItem('portfolio_last_saved')
    ```
 

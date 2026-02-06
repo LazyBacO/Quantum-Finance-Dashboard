@@ -14,36 +14,100 @@ import {
 
 // LocalStorage keys for persistence
 const STORAGE_KEYS = {
-  ACCOUNTS: "portfolio_accounts",
-  TRANSACTIONS: "portfolio_transactions",
-  GOALS: "portfolio_goals",
-  STOCK_ACTIONS: "portfolio_stock_actions",
+  STATE: "portfolio_state_v1",
+  BACKUP: "portfolio_state_backup_v1",
+  LEGACY_ACCOUNTS: "portfolio_accounts",
+  LEGACY_TRANSACTIONS: "portfolio_transactions",
+  LEGACY_GOALS: "portfolio_goals",
+  LEGACY_STOCK_ACTIONS: "portfolio_stock_actions",
   LAST_SAVED: "portfolio_last_saved",
 }
 
 const canUseStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined"
 
-// Helper functions for localStorage
-const saveToStorage = (key: string, data: unknown) => {
-  if (!canUseStorage()) return
+type PortfolioState = {
+  version: 1
+  accounts: AccountItem[]
+  transactions: Transaction[]
+  goals: FinancialGoal[]
+  stockActions: StockAction[]
+  lastSaved: string
+}
+
+const isPortfolioState = (value: unknown): value is PortfolioState => {
+  if (!value || typeof value !== "object") return false
+  const data = value as PortfolioState
+  return (
+    data.version === 1 &&
+    Array.isArray(data.accounts) &&
+    Array.isArray(data.transactions) &&
+    Array.isArray(data.goals) &&
+    Array.isArray(data.stockActions) &&
+    typeof data.lastSaved === "string"
+  )
+}
+
+const loadJson = <T,>(key: string): { exists: boolean; value: T | null } => {
+  if (!canUseStorage()) return { exists: false, value: null }
   try {
-    window.localStorage.setItem(key, JSON.stringify(data))
-    window.localStorage.setItem(STORAGE_KEYS.LAST_SAVED, new Date().toISOString())
+    const stored = window.localStorage.getItem(key)
+    if (!stored) return { exists: false, value: null }
+    return { exists: true, value: JSON.parse(stored) as T }
   } catch (error) {
-    console.error(`Failed to save ${key} to localStorage:`, error)
+    console.error(`Failed to load ${key} from localStorage:`, error)
+    return { exists: true, value: null }
   }
 }
 
-const loadFromStorage = (key: string, fallback: unknown) => {
-  if (!canUseStorage()) return fallback
+const savePortfolioState = (state: PortfolioState) => {
+  if (!canUseStorage()) return
   try {
-    const stored = window.localStorage.getItem(key)
-    return stored ? JSON.parse(stored) : fallback
+    const previous = window.localStorage.getItem(STORAGE_KEYS.STATE)
+    if (previous) {
+      window.localStorage.setItem(STORAGE_KEYS.BACKUP, previous)
+    }
+    window.localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state))
+    window.localStorage.setItem(STORAGE_KEYS.LAST_SAVED, state.lastSaved)
   } catch (error) {
-    console.error(`Failed to load ${key} from localStorage:`, error)
-    return fallback
+    console.error("Failed to save portfolio state to localStorage:", error)
   }
+}
+
+const loadPortfolioState = () => {
+  const stored = loadJson<PortfolioState>(STORAGE_KEYS.STATE)
+  if (stored.exists && stored.value && isPortfolioState(stored.value)) {
+    return stored.value
+  }
+
+  const backup = loadJson<PortfolioState>(STORAGE_KEYS.BACKUP)
+  if (backup.exists && backup.value && isPortfolioState(backup.value)) {
+    return backup.value
+  }
+
+  const legacyAccounts = loadJson<AccountItem[]>(STORAGE_KEYS.LEGACY_ACCOUNTS)
+  const legacyTransactions = loadJson<Transaction[]>(STORAGE_KEYS.LEGACY_TRANSACTIONS)
+  const legacyGoals = loadJson<FinancialGoal[]>(STORAGE_KEYS.LEGACY_GOALS)
+  const legacyStockActions = loadJson<StockAction[]>(STORAGE_KEYS.LEGACY_STOCK_ACTIONS)
+  const legacyLastSaved = loadJson<string>(STORAGE_KEYS.LAST_SAVED)
+
+  if (
+    legacyAccounts.exists ||
+    legacyTransactions.exists ||
+    legacyGoals.exists ||
+    legacyStockActions.exists
+  ) {
+    return {
+      version: 1,
+      accounts: legacyAccounts.value ?? DEFAULT_ACCOUNTS,
+      transactions: legacyTransactions.value ?? DEFAULT_TRANSACTIONS,
+      goals: legacyGoals.value ?? DEFAULT_GOALS,
+      stockActions: legacyStockActions.value ?? DEFAULT_STOCK_ACTIONS,
+      lastSaved: legacyLastSaved.value ?? new Date().toISOString(),
+    }
+  }
+
+  return null
 }
 
 interface PortfolioContextType {
@@ -83,49 +147,34 @@ interface PortfolioContextType {
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined)
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
-  const [accounts, setAccounts] = useState<AccountItem[]>(() =>
-    loadFromStorage(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
-  )
+  const initialState = useMemo(() => loadPortfolioState(), [])
+  const [accounts, setAccounts] = useState<AccountItem[]>(() => initialState?.accounts ?? DEFAULT_ACCOUNTS)
   const [transactions, setTransactions] = useState<Transaction[]>(() =>
-    loadFromStorage(STORAGE_KEYS.TRANSACTIONS, DEFAULT_TRANSACTIONS)
+    initialState?.transactions ?? DEFAULT_TRANSACTIONS
   )
-  const [goals, setGoals] = useState<FinancialGoal[]>(() =>
-    loadFromStorage(STORAGE_KEYS.GOALS, DEFAULT_GOALS)
-  )
+  const [goals, setGoals] = useState<FinancialGoal[]>(() => initialState?.goals ?? DEFAULT_GOALS)
   const [stockActions, setStockActions] = useState<StockAction[]>(() =>
-    loadFromStorage(STORAGE_KEYS.STOCK_ACTIONS, DEFAULT_STOCK_ACTIONS)
+    initialState?.stockActions ?? DEFAULT_STOCK_ACTIONS
   )
-
-  // Auto-save accounts to localStorage whenever they change
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.ACCOUNTS, accounts)
-  }, [accounts])
-
-  // Auto-save transactions to localStorage whenever they change
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.TRANSACTIONS, transactions)
-  }, [transactions])
-
-  // Auto-save goals to localStorage whenever they change
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.GOALS, goals)
-  }, [goals])
-
-  // Auto-save stock actions to localStorage whenever they change
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.STOCK_ACTIONS, stockActions)
-  }, [stockActions])
 
   // Track last saved time from localStorage
   const [lastSaved, setLastSaved] = useState<string | null>(() =>
-    canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null
+    initialState?.lastSaved ?? (canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null)
   )
 
-  // Update lastSaved whenever any data changes
+  // Auto-save combined state to localStorage whenever any data changes
   useEffect(() => {
-    if (!canUseStorage()) return
-    const saved = window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED)
-    setLastSaved(saved)
+    const savedAt = new Date().toISOString()
+    const state: PortfolioState = {
+      version: 1,
+      accounts,
+      transactions,
+      goals,
+      stockActions,
+      lastSaved: savedAt,
+    }
+    savePortfolioState(state)
+    setLastSaved(savedAt)
   }, [accounts, transactions, goals, stockActions])
 
   const formatCurrency = useCallback(
