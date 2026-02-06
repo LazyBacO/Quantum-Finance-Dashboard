@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react"
 import {
   ACCOUNTS as DEFAULT_ACCOUNTS,
   TRANSACTIONS as DEFAULT_TRANSACTIONS,
@@ -44,12 +44,51 @@ interface PortfolioContextType {
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined)
+const PORTFOLIO_STORAGE_KEY = "portfolio_state_v1"
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<AccountItem[]>(DEFAULT_ACCOUNTS)
   const [transactions, setTransactions] = useState<Transaction[]>(DEFAULT_TRANSACTIONS)
   const [goals, setGoals] = useState<FinancialGoal[]>(DEFAULT_GOALS)
   const [stockActions, setStockActions] = useState<StockAction[]>(DEFAULT_STOCK_ACTIONS)
+
+  useEffect(() => {
+    const storedState = window.localStorage.getItem(PORTFOLIO_STORAGE_KEY)
+    if (!storedState) return
+    try {
+      const parsed = JSON.parse(storedState) as {
+        accounts?: AccountItem[]
+        transactions?: Transaction[]
+        goals?: FinancialGoal[]
+        stockActions?: StockAction[]
+      }
+
+      if (parsed.accounts) {
+        setAccounts(parsed.accounts)
+      }
+      if (parsed.transactions) {
+        setTransactions(parsed.transactions)
+      }
+      if (parsed.goals) {
+        setGoals(parsed.goals)
+      }
+      if (parsed.stockActions) {
+        setStockActions(parsed.stockActions)
+      }
+    } catch (error) {
+      console.warn("Failed to parse saved portfolio state", error)
+    }
+  }, [])
+
+  useEffect(() => {
+    const snapshot = JSON.stringify({
+      accounts,
+      transactions,
+      goals,
+      stockActions,
+    })
+    window.localStorage.setItem(PORTFOLIO_STORAGE_KEY, snapshot)
+  }, [accounts, transactions, goals, stockActions])
 
   const formatCurrency = useCallback(
     (value: number) =>
