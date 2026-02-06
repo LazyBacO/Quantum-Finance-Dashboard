@@ -11,67 +11,64 @@ import { PortfolioProvider } from "@/lib/portfolio-context"
 export default function Content() {
   return (
     <PortfolioProvider>
-      <div className="space-y-4">
-        {/* AI Financial Advisor */}
-        <section
-          id="ai-advisor"
-          className="bg-white dark:bg-[#0F0F12] rounded-xl p-6 flex flex-col border border-gray-200 dark:border-[#1F1F23] scroll-mt-20"
-        >
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-left flex items-center gap-2">
-            <Bot className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-50" />
-            AI Investment Advisor
-          </h2>
-          <AIAdvisor />
+      <div className="space-y-8">
+        <section id="ai-advisor" className="space-y-3 scroll-mt-24">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+              <Bot className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              AI Investment Advisor
+            </h2>
+          </div>
+          <AIAdvisor className="w-full" />
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <section
-            id="accounts"
-            className="bg-white dark:bg-[#0F0F12] rounded-xl p-6 flex flex-col border border-gray-200 dark:border-[#1F1F23] scroll-mt-20"
-          >
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-left flex items-center gap-2 ">
-              <Wallet className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-50" />
-              Accounts
-            </h2>
-            <div className="flex-1">
-              <List01 className="h-full" />
+          <section id="accounts" className="space-y-3 scroll-mt-24">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+                <Wallet className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Accounts</h2>
             </div>
+            <List01 className="h-full w-full" />
           </section>
-          <section
-            id="transactions"
-            className="bg-white dark:bg-[#0F0F12] rounded-xl p-6 flex flex-col border border-gray-200 dark:border-[#1F1F23] scroll-mt-20"
-          >
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-left flex items-center gap-2">
-              <CreditCard className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-50" />
-              Recent Transactions
-            </h2>
-            <div className="flex-1">
-              <List02 className="h-full" />
+
+          <section id="transactions" className="space-y-3 scroll-mt-24">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+                <CreditCard className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Recent Transactions
+              </h2>
             </div>
+            <List02 className="h-full w-full" />
           </section>
         </div>
 
-        <section
-          id="stock-actions"
-          className="bg-white dark:bg-[#0F0F12] rounded-xl p-6 flex flex-col border border-gray-200 dark:border-[#1F1F23] scroll-mt-20"
-        >
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-left flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-50" />
-            Stock Market Actions
-          </h2>
-          <div className="flex-1">
-            <List04 className="h-full" />
+        <section id="stock-actions" className="space-y-3 scroll-mt-24">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+              <TrendingUp className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              Stock Market Actions
+            </h2>
           </div>
+          <List04 className="h-full w-full" />
         </section>
 
-        <section
-          id="goals"
-          className="bg-white dark:bg-[#0F0F12] rounded-xl p-6 flex flex-col items-start justify-start border border-gray-200 dark:border-[#1F1F23] scroll-mt-20"
-        >
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-left flex items-center gap-2">
-            <Target className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-50" />
-            Financial Goals
-          </h2>
+        <section id="goals" className="space-y-3 scroll-mt-24">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+              <Target className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              Financial Goals
+            </h2>
+          </div>
           <List03 />
         </section>
       </div>

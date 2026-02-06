@@ -77,7 +77,7 @@ export default function Profile01({
 
   return (
     <div className="w-full max-w-sm mx-auto">
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      <div className="fx-panel">
         <div className="relative px-6 pt-12 pb-6">
           <div className="flex items-center gap-4 mb-8">
             <div className="relative shrink-0">
@@ -86,60 +86,58 @@ export default function Profile01({
                 alt={name}
                 width={72}
                 height={72}
-                className="rounded-full ring-4 ring-white dark:ring-zinc-900 object-cover"
+                className="rounded-full ring-4 ring-background object-cover"
               />
-              <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900" />
+              <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-primary ring-2 ring-background" />
             </div>
 
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{name}</h2>
-              <p className="text-zinc-600 dark:text-zinc-400">{role}</p>
+              <h2 className="text-xl font-semibold text-foreground">{name}</h2>
+              <p className="text-muted-foreground">{role}</p>
             </div>
           </div>
-          <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
+          <div className="h-px bg-border/60 my-6" />
           <div className="space-y-2">
             {menuItems.slice(0, 1).map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex items-center justify-between p-2 
-                                    hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
-                                    rounded-lg transition-colors duration-200"
+                className="flex items-center justify-between p-2 hover:bg-accent/60 rounded-lg transition-colors duration-200"
               >
                 <div className="flex items-center gap-2">
                   {item.icon}
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.label}</span>
+                  <span className="text-sm font-medium text-foreground">{item.label}</span>
                 </div>
                 <div className="flex items-center">
                   {item.value && (
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400 mr-2">{item.value}</span>
+                    <span className="text-sm text-muted-foreground mr-2">{item.value}</span>
                   )}
                   {item.external && <MoveUpRight className="w-4 h-4" />}
                 </div>
               </Link>
             ))}
 
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3 space-y-3">
+            <div className="rounded-lg border border-border/60 bg-background/40 p-3 space-y-3">
               <div className="flex items-center gap-2">
-                <Settings className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
-                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Settings</span>
+                <Settings className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Settings</span>
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm text-zinc-700 dark:text-zinc-300">
+                <div className="flex items-center justify-between text-sm text-foreground/80">
                   <span>Email alerts</span>
                   <Switch checked={emailAlerts} onCheckedChange={setEmailAlerts} />
                 </div>
-                <div className="flex items-center justify-between text-sm text-zinc-700 dark:text-zinc-300">
+                <div className="flex items-center justify-between text-sm text-foreground/80">
                   <span>Push notifications</span>
                   <Switch checked={pushAlerts} onCheckedChange={setPushAlerts} />
                 </div>
-                <div className="flex items-center justify-between text-sm text-zinc-700 dark:text-zinc-300">
+                <div className="flex items-center justify-between text-sm text-foreground/80">
                   <span>Weekly report</span>
                   <Switch checked={weeklyReport} onCheckedChange={setWeeklyReport} />
                 </div>
-                <div className="flex items-center justify-between text-sm text-zinc-700 dark:text-zinc-300">
+                <div className="flex items-center justify-between text-sm text-foreground/80">
                   <span>Two-factor auth</span>
                   <Switch checked={twoFactor} onCheckedChange={setTwoFactor} />
                 </div>
@@ -147,11 +145,11 @@ export default function Profile01({
 
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <label className="space-y-1">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Currency</span>
+                  <span className="text-xs text-muted-foreground">Currency</span>
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-border/60 bg-background/40 px-2 py-1 text-sm text-foreground"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -159,11 +157,11 @@ export default function Profile01({
                   </select>
                 </label>
                 <label className="space-y-1">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Language</span>
+                  <span className="text-xs text-muted-foreground">Language</span>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-border/60 bg-background/40 px-2 py-1 text-sm text-foreground"
                   >
                     <option value="en">English</option>
                     <option value="fr">Français</option>
@@ -173,19 +171,19 @@ export default function Profile01({
               </div>
 
               <label className="space-y-1 text-sm">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">ChatGPT API Key</span>
+                <span className="text-xs text-muted-foreground">ChatGPT API Key</span>
                 <div className="flex items-center gap-2">
                   <input
                     type={showApiKey ? "text" : "password"}
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder="sk-..."
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-border/60 bg-background/40 px-2 py-1 text-sm text-foreground placeholder:text-muted-foreground/70"
                   />
                   <button
                     type="button"
                     onClick={() => setShowApiKey((current) => !current)}
-                    className="text-xs font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground"
                   >
                     {showApiKey ? "Masquer" : "Afficher"}
                   </button>
@@ -193,7 +191,7 @@ export default function Profile01({
                 {!apiKeyIsValid && (
                   <span className="text-[11px] text-rose-500">La clé doit commencer par “sk-”.</span>
                 )}
-                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                <span className="text-[11px] text-muted-foreground">
                   Stored locally in your browser to enable the latest ChatGPT model for finance
                   agent responses.
                 </span>
@@ -201,18 +199,18 @@ export default function Profile01({
                   href="https://platform.openai.com/api-keys"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                  className="text-[11px] font-medium text-primary hover:text-primary/80"
                 >
                   Create an OpenAI API key
                 </a>
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">Timezone</span>
+                <span className="text-xs text-muted-foreground">Timezone</span>
                 <select
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100"
+                  className="w-full rounded-md border border-border/60 bg-background/40 px-2 py-1 text-sm text-foreground"
                 >
                   <option value="GMT">GMT (UTC+0)</option>
                   <option value="CET">CET (UTC+1)</option>
@@ -225,17 +223,15 @@ export default function Profile01({
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex items-center justify-between p-2 
-                                    hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
-                                    rounded-lg transition-colors duration-200"
+                className="flex items-center justify-between p-2 hover:bg-accent/60 rounded-lg transition-colors duration-200"
               >
                 <div className="flex items-center gap-2">
                   {item.icon}
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.label}</span>
+                  <span className="text-sm font-medium text-foreground">{item.label}</span>
                 </div>
                 <div className="flex items-center">
                   {item.value && (
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400 mr-2">{item.value}</span>
+                    <span className="text-sm text-muted-foreground mr-2">{item.value}</span>
                   )}
                   {item.external && <MoveUpRight className="w-4 h-4" />}
                 </div>
@@ -244,13 +240,11 @@ export default function Profile01({
 
             <button
               type="button"
-              className="w-full flex items-center justify-between p-2 
-                                hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
-                                rounded-lg transition-colors duration-200"
+              className="w-full flex items-center justify-between p-2 hover:bg-accent/60 rounded-lg transition-colors duration-200"
             >
               <div className="flex items-center gap-2">
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Logout</span>
+                <span className="text-sm font-medium text-foreground">Logout</span>
               </div>
             </button>
           </div>

@@ -31,18 +31,18 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       />
-      <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
+      <div className="relative z-10 w-full max-w-md mx-4 fx-panel">
+        <div className="flex items-center justify-between p-4 border-b border-border/60">
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1 rounded-lg hover:bg-accent/60 transition-colors"
           >
-            <X className="w-5 h-5 text-zinc-500" />
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
         <div className="p-4">{children}</div>
@@ -94,7 +94,7 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Account" : "Add Account"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Account Name
           </label>
           <input
@@ -102,47 +102,47 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             placeholder="Main Savings"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Description
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             placeholder="Personal savings"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Balance
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
             <input
               type="number"
               step="0.01"
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
               required
-              className="w-full pl-7 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full pl-7 pr-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               placeholder="0.00"
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Account Type
           </label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as AccountItem["type"])}
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
             <option value="checking">Checking</option>
             <option value="savings">Savings</option>
@@ -167,13 +167,13 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             {initialData ? "Update" : "Add"}
           </button>
@@ -244,7 +244,7 @@ export function TransactionModal({
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Transaction" : "Add Transaction"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Description
           </label>
           <input
@@ -252,36 +252,36 @@ export function TransactionModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             placeholder="Grocery shopping"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Amount
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <input
                 type="number"
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
-                className="w-full pl-7 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                className="w-full pl-7 pr-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                 placeholder="0.00"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Type
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as Transaction["type"])}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <option value="incoming">Income</option>
               <option value="outgoing">Expense</option>
@@ -290,13 +290,13 @@ export function TransactionModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <option value="shopping">Shopping</option>
               <option value="investment">Investment</option>
@@ -309,13 +309,13 @@ export function TransactionModal({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as Transaction["status"])}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+              className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
@@ -340,13 +340,13 @@ export function TransactionModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg border border-border/60 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             {initialData ? "Update" : "Add"}
           </button>

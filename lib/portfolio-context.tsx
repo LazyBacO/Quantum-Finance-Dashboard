@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react"
 import {
   ACCOUNTS as DEFAULT_ACCOUNTS,
   TRANSACTIONS as DEFAULT_TRANSACTIONS,
@@ -11,6 +11,35 @@ import {
   type FinancialGoal,
   type StockAction,
 } from "./portfolio-data"
+
+// LocalStorage keys for persistence
+const STORAGE_KEYS = {
+  ACCOUNTS: "portfolio_accounts",
+  TRANSACTIONS: "portfolio_transactions",
+  GOALS: "portfolio_goals",
+  STOCK_ACTIONS: "portfolio_stock_actions",
+  LAST_SAVED: "portfolio_last_saved",
+}
+
+// Helper functions for localStorage
+const saveToStorage = (key: string, data: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+    localStorage.setItem(STORAGE_KEYS.LAST_SAVED, new Date().toISOString())
+  } catch (error) {
+    console.error(`Failed to save ${key} to localStorage:`, error)
+  }
+}
+
+const loadFromStorage = (key: string, fallback: unknown) => {
+  try {
+    const stored = localStorage.getItem(key)
+    return stored ? JSON.parse(stored) : fallback
+  } catch (error) {
+    console.error(`Failed to load ${key} from localStorage:`, error)
+    return fallback
+  }
+}
 
 interface PortfolioContextType {
   // Accounts
@@ -41,15 +70,60 @@ interface PortfolioContextType {
 
   // Computed values
   totalBalance: string
+
+  // Save status
+  lastSaved: string | null
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined)
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
-  const [accounts, setAccounts] = useState<AccountItem[]>(DEFAULT_ACCOUNTS)
-  const [transactions, setTransactions] = useState<Transaction[]>(DEFAULT_TRANSACTIONS)
-  const [goals, setGoals] = useState<FinancialGoal[]>(DEFAULT_GOALS)
-  const [stockActions, setStockActions] = useState<StockAction[]>(DEFAULT_STOCK_ACTIONS)
+  const [accounts, setAccounts] = useState<AccountItem[]>(() =>
+    loadFromStorage(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS)
+  )
+  const [transactions, setTransactions] = useState<Transaction[]>(() =>
+    loadFromStorage(STORAGE_KEYS.TRANSACTIONS, DEFAULT_TRANSACTIONS)
+  )
+  const [goals, setGoals] = useState<FinancialGoal[]>(() =>
+    loadFromStorage(STORAGE_KEYS.GOALS, DEFAULT_GOALS)
+  )
+  const [stockActions, setStockActions] = useState<StockAction[]>(() =>
+    loadFromStorage(STORAGE_KEYS.STOCK_ACTIONS, DEFAULT_STOCK_ACTIONS)
+  )
+
+  // Auto-save accounts to localStorage whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.ACCOUNTS, accounts)
+  }, [accounts])
+
+  // Auto-save transactions to localStorage whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.TRANSACTIONS, transactions)
+  }, [transactions])
+
+  // Auto-save goals to localStorage whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.GOALS, goals)
+  }, [goals])
+
+  // Auto-save stock actions to localStorage whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.STOCK_ACTIONS, stockActions)
+  }, [stockActions])
+
+  // Track last saved time from localStorage
+  const [lastSaved, setLastSaved] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(STORAGE_KEYS.LAST_SAVED)
+    }
+    return null
+  })
+
+  // Update lastSaved whenever any data changes
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.LAST_SAVED)
+    setLastSaved(saved)
+  }, [accounts, transactions, goals, stockActions])
 
   const formatCurrency = useCallback(
     (value: number) =>
@@ -196,6 +270,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       updateStockAction,
       deleteStockAction,
       totalBalance,
+      lastSaved,
     }),
     [
       accounts,
@@ -217,6 +292,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       updateStockAction,
       deleteStockAction,
       totalBalance,
+      lastSaved,
     ]
   )
 

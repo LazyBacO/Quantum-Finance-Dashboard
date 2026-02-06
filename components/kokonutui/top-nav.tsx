@@ -19,20 +19,20 @@ export default function TopNav() {
   ]
 
   return (
-    <nav className="px-3 sm:px-6 flex items-center justify-between bg-white dark:bg-[#0F0F12] border-b border-gray-200 dark:border-[#1F1F23] h-full">
-      <div className="font-medium text-sm hidden sm:flex items-center space-x-1 truncate max-w-[300px]">
+    <nav className="px-3 sm:px-6 flex items-center justify-between bg-transparent h-full">
+      <div className="font-medium text-sm hidden sm:flex items-center gap-1 truncate max-w-[300px]">
         {breadcrumbs.map((item, index) => (
           <div key={item.label} className="flex items-center">
-            {index > 0 && <ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400 mx-1" />}
+            {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />}
             {item.href ? (
               <Link
                 href={item.href}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                className={`transition-colors ${index === 0 ? "fx-brand font-semibold" : "text-muted-foreground hover:text-foreground"}`}
               >
                 {item.label}
               </Link>
             ) : (
-              <span className="text-gray-900 dark:text-gray-100">{item.label}</span>
+              <span className="text-foreground">{item.label}</span>
             )}
           </div>
         ))}
@@ -41,9 +41,9 @@ export default function TopNav() {
       <div className="flex items-center gap-2 sm:gap-4 ml-auto sm:ml-0">
         <button
           type="button"
-          className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-[#1F1F23] rounded-full transition-colors"
+          className="p-1.5 sm:p-2 hover:bg-accent/60 rounded-full transition-colors"
         >
-          <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-300" />
+          <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
         </button>
 
         <ThemeToggle />
@@ -55,13 +55,13 @@ export default function TopNav() {
               alt="User avatar"
               width={28}
               height={28}
-              className="rounded-full ring-2 ring-gray-200 dark:ring-[#2B2B30] sm:w-8 sm:h-8 cursor-pointer"
+              className="rounded-full ring-2 ring-border/70 hover:ring-primary/40 transition-colors sm:w-8 sm:h-8 cursor-pointer"
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="w-[280px] sm:w-80 bg-background border-border rounded-lg shadow-lg"
+            className="w-[280px] sm:w-80 bg-background/80 border-border/60 backdrop-blur-xl rounded-xl shadow-xl"
           >
             <Profile01 avatar="https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-01-n0x8HFv8EUetf9z6ht0wScJKoTHqf8.png" />
           </DropdownMenuContent>
