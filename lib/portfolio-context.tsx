@@ -3,9 +3,17 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react"
 import {
   ACCOUNTS as DEFAULT_ACCOUNTS,
+  ALLOCATION_ACTUAL as DEFAULT_ALLOCATION_ACTUAL,
+  ALLOCATION_TARGETS as DEFAULT_ALLOCATION_TARGETS,
+  PERFORMANCE_METRICS as DEFAULT_PERFORMANCE_METRICS,
+  RISK_METRICS as DEFAULT_RISK_METRICS,
   TRANSACTIONS as DEFAULT_TRANSACTIONS,
   FINANCIAL_GOALS as DEFAULT_GOALS,
   STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
+  type AllocationActual,
+  type AllocationTarget,
+  type PerformanceMetric,
+  type RiskMetric,
   type AccountItem,
   type Transaction,
   type FinancialGoal,
@@ -136,6 +144,12 @@ interface PortfolioContextType {
   addStockAction: (action: Omit<StockAction, "id">) => void
   updateStockAction: (id: string, action: Partial<StockAction>) => void
   deleteStockAction: (id: string) => void
+
+  // Allocation + KPIs
+  allocationActual: AllocationActual[]
+  allocationTargets: AllocationTarget[]
+  performanceMetrics: PerformanceMetric[]
+  riskMetrics: RiskMetric[]
 
   // Computed values
   totalBalance: string
@@ -321,6 +335,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       addStockAction,
       updateStockAction,
       deleteStockAction,
+      allocationActual: DEFAULT_ALLOCATION_ACTUAL,
+      allocationTargets: DEFAULT_ALLOCATION_TARGETS,
+      performanceMetrics: DEFAULT_PERFORMANCE_METRICS,
+      riskMetrics: DEFAULT_RISK_METRICS,
       totalBalance,
       lastSaved,
     }),

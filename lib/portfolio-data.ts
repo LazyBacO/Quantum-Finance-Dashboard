@@ -39,6 +39,33 @@ export interface StockAction {
   status: "executed" | "pending" | "cancelled"
 }
 
+export interface AllocationActual {
+  id: string
+  label: string
+  actual: number
+  colorClass: string
+}
+
+export interface AllocationTarget {
+  id: string
+  label: string
+  target: number
+}
+
+export interface PerformanceMetric {
+  id: string
+  label: string
+  value: string
+  note?: string
+}
+
+export interface RiskMetric {
+  id: string
+  label: string
+  value: string
+  note?: string
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -194,6 +221,121 @@ export const STOCK_ACTIONS: StockAction[] = [
     price: "$413.22",
     tradeDate: "Feb 25, 2026",
     status: "executed",
+  },
+]
+
+export const ALLOCATION_ACTUAL: AllocationActual[] = [
+  {
+    id: "equities",
+    label: "Actions",
+    actual: 48,
+    colorClass: "bg-emerald-500",
+  },
+  {
+    id: "bonds",
+    label: "Obligations",
+    actual: 24,
+    colorClass: "bg-blue-500",
+  },
+  {
+    id: "cash",
+    label: "Cash",
+    actual: 12,
+    colorClass: "bg-amber-500",
+  },
+  {
+    id: "crypto",
+    label: "Crypto",
+    actual: 8,
+    colorClass: "bg-purple-500",
+  },
+  {
+    id: "real-estate",
+    label: "Immobilier",
+    actual: 8,
+    colorClass: "bg-rose-500",
+  },
+]
+
+export const ALLOCATION_TARGETS: AllocationTarget[] = [
+  {
+    id: "equities",
+    label: "Actions",
+    target: 50,
+  },
+  {
+    id: "bonds",
+    label: "Obligations",
+    target: 25,
+  },
+  {
+    id: "cash",
+    label: "Cash",
+    target: 10,
+  },
+  {
+    id: "crypto",
+    label: "Crypto",
+    target: 5,
+  },
+  {
+    id: "real-estate",
+    label: "Immobilier",
+    target: 10,
+  },
+]
+
+export const PERFORMANCE_METRICS: PerformanceMetric[] = [
+  {
+    id: "ytd",
+    label: "YTD",
+    value: "+8.4%",
+    note: "vs bench +1.2%",
+  },
+  {
+    id: "one-year",
+    label: "1Y",
+    value: "+14.6%",
+    note: "vs bench +2.4%",
+  },
+  {
+    id: "five-year",
+    label: "5Y",
+    value: "+42.3%",
+    note: "annualisé 7.3%",
+  },
+  {
+    id: "annualized",
+    label: "Annualisée",
+    value: "7.3%",
+    note: "sur 5 ans",
+  },
+  {
+    id: "benchmark",
+    label: "Vs Benchmark",
+    value: "+1.8%",
+    note: "allocation cible",
+  },
+]
+
+export const RISK_METRICS: RiskMetric[] = [
+  {
+    id: "volatility",
+    label: "Volatilité",
+    value: "11.4%",
+    note: "12 mois glissants",
+  },
+  {
+    id: "max-drawdown",
+    label: "Drawdown max",
+    value: "-9.2%",
+    note: "depuis 3 ans",
+  },
+  {
+    id: "sharpe",
+    label: "Ratio de Sharpe",
+    value: "0.86",
+    note: "RF 2.1%",
   },
 ]
 
