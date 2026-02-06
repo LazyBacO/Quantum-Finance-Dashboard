@@ -25,9 +25,9 @@ interface List03Props {
 }
 
 const iconStyles = {
-  savings: "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100",
-  investment: "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100",
-  debt: "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100",
+  savings: "bg-background/40 border border-border/60 text-foreground",
+  investment: "bg-background/40 border border-border/60 text-foreground",
+  debt: "bg-background/40 border border-border/60 text-foreground",
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -93,20 +93,18 @@ export default function List03({ className }: List03Props) {
             className={cn(
               "flex flex-col items-center justify-center",
               "w-[280px] shrink-0 min-h-[280px]",
-              "bg-white dark:bg-zinc-900/70",
-              "rounded-xl",
-              "border-2 border-dashed border-zinc-200 dark:border-zinc-800",
-              "hover:border-zinc-400 dark:hover:border-zinc-600",
+              "bg-background/40 backdrop-blur-xl",
+              "rounded-2xl",
+              "border-2 border-dashed border-border/60",
+              "hover:border-primary/40",
               "transition-all duration-200",
               "cursor-pointer group"
             )}
           >
-            <div className="p-3 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-              <Plus className="w-6 h-6 text-zinc-500 dark:text-zinc-400" />
+            <div className="p-3 rounded-full bg-accent/60 group-hover:bg-accent/80 transition-colors">
+              <Plus className="w-6 h-6 text-muted-foreground" />
             </div>
-            <span className="mt-3 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Add New Goal
-            </span>
+            <span className="mt-3 text-sm font-medium text-muted-foreground">Add New Goal</span>
           </button>
 
           {goals.map((item) => {
@@ -117,12 +115,9 @@ export default function List03({ className }: List03Props) {
                 className={cn(
                   "flex flex-col",
                   "w-[280px] shrink-0",
-                  "bg-white dark:bg-zinc-900/70",
-                  "rounded-xl",
-                  "border border-zinc-100 dark:border-zinc-800",
-                  "hover:border-zinc-200 dark:hover:border-zinc-700",
+                  "fx-panel",
+                  "hover:border-primary/30",
                   "transition-all duration-200",
-                  "shadow-sm backdrop-blur-xl",
                   "group cursor-pointer"
                 )}
                 onClick={() => handleEditGoal(item)}
@@ -153,28 +148,24 @@ export default function List03({ className }: List03Props) {
                         })}
                         {item.status.charAt(0).toUpperCase() + item.status.slice(1).replace("-", " ")}
                       </div>
-                      <Pencil className="w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Pencil className="w-3 h-3 text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2">
-                      {item.subtitle}
-                    </p>
+                    <h3 className="text-sm font-medium text-foreground mb-1">{item.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{item.subtitle}</p>
                   </div>
 
                   {typeof item.progress === "number" && (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-zinc-600 dark:text-zinc-400">Progress</span>
-                        <span className="text-zinc-900 dark:text-zinc-100">{item.progress}%</span>
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="text-foreground">{item.progress}%</span>
                       </div>
-                      <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-accent/60 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-zinc-900 dark:bg-zinc-100 rounded-full transition-all duration-300"
+                          className="h-full bg-primary rounded-full transition-all duration-300"
                           style={{ width: `${item.progress}%` }}
                         />
                       </div>
@@ -183,28 +174,26 @@ export default function List03({ className }: List03Props) {
 
                   {item.amount && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {item.amount}
-                      </span>
-                      <span className="text-xs text-zinc-600 dark:text-zinc-400">target</span>
+                      <span className="text-sm font-medium text-foreground">{item.amount}</span>
+                      <span className="text-xs text-muted-foreground">target</span>
                     </div>
                   )}
 
-                  <div className="flex items-center text-xs text-zinc-600 dark:text-zinc-400">
+                  <div className="flex items-center text-xs text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5 mr-1.5" />
                     <span>{item.date}</span>
                   </div>
                 </div>
 
-                <div className="mt-auto border-t border-zinc-100 dark:border-zinc-800">
+                <div className="mt-auto border-t border-border/60">
                   <button
                     className={cn(
                       "w-full flex items-center justify-center gap-2",
                       "py-2.5 px-3",
                       "text-xs font-medium",
-                      "text-zinc-600 dark:text-zinc-400",
-                      "hover:text-zinc-900 dark:hover:text-zinc-100",
-                      "hover:bg-zinc-100 dark:hover:bg-zinc-800/50",
+                      "text-muted-foreground",
+                      "hover:text-foreground",
+                      "hover:bg-accent/60",
                       "transition-colors duration-200"
                     )}
                     onClick={(e) => {

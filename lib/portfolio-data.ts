@@ -29,6 +29,16 @@ export interface FinancialGoal {
   progress?: number
 }
 
+export interface StockAction {
+  id: string
+  symbol: string
+  action: "buy" | "sell"
+  shares: number
+  price: string
+  tradeDate: string
+  status: "executed" | "pending" | "cancelled"
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -154,6 +164,36 @@ export const FINANCIAL_GOALS: FinancialGoal[] = [
     amount: "$25,000",
     status: "in-progress",
     progress: 45,
+  },
+]
+
+export const STOCK_ACTIONS: StockAction[] = [
+  {
+    id: "1",
+    symbol: "AAPL",
+    action: "buy",
+    shares: 12,
+    price: "$182.45",
+    tradeDate: "Mar 2, 2026",
+    status: "executed",
+  },
+  {
+    id: "2",
+    symbol: "TSLA",
+    action: "sell",
+    shares: 6,
+    price: "$236.10",
+    tradeDate: "Feb 28, 2026",
+    status: "pending",
+  },
+  {
+    id: "3",
+    symbol: "MSFT",
+    action: "buy",
+    shares: 4,
+    price: "$413.22",
+    tradeDate: "Feb 25, 2026",
+    status: "executed",
   },
 ]
 

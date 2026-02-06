@@ -1,10 +1,12 @@
 import { streamText, convertToModelMessages } from "ai"
-import type { AccountItem, Transaction, FinancialGoal } from "@/lib/portfolio-data"
+import { createOpenAI } from "@ai-sdk/openai"
+import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
 
 interface PortfolioData {
   accounts: AccountItem[]
   transactions: Transaction[]
   goals: FinancialGoal[]
+  stockActions: StockAction[]
   totalBalance: string
 }
 
@@ -35,19 +37,20 @@ function calculateSummary(accounts: AccountItem[]) {
 }
 
 export async function POST(req: Request) {
-  const { messages, portfolioData } = await req.json()
+  const { messages, portfolioData, apiKey } = await req.json()
 
   // Use dynamic portfolio data if provided, otherwise use defaults
   const portfolio: PortfolioData = portfolioData || {
     accounts: [],
     transactions: [],
     goals: [],
+    stockActions: [],
     totalBalance: "$0.00",
   }
 
   const summary = calculateSummary(portfolio.accounts)
 
-  const systemPrompt = `You are an expert financial advisor AI assistant integrated into the user's financial dashboard. You have access to their complete financial portfolio data and can provide personalized investment advice.
+  const systemPrompt = `You are an expert financial advisor AI agent integrated into the user's financial dashboard. You have access to their complete financial portfolio data and can provide personalized investment advice and proactive guidance.
 
 ## Current Portfolio Data:
 
@@ -69,6 +72,9 @@ ${portfolio.transactions.map((t: Transaction) => `- ${t.title}: ${t.type === "in
 ### Financial Goals:
 ${portfolio.goals.map((g: FinancialGoal) => `- ${g.title}: Target ${g.amount || "N/A"}, Progress: ${g.progress || 0}%, Status: ${g.status}, ${g.date}`).join("\n") || "No goals set"}
 
+### Stock Market Actions:
+${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpperCase()}: ${a.shares} shares @ ${a.price} (${a.status}) - ${a.tradeDate}`).join("\n") || "No stock actions"}
+
 ## Your Role:
 1. Analyze the user's portfolio and provide personalized investment advice
 2. Identify opportunities for portfolio optimization
@@ -78,6 +84,7 @@ ${portfolio.goals.map((g: FinancialGoal) => `- ${g.title}: Target ${g.amount || 
 6. Provide insights on spending patterns based on transactions
 
 ## Guidelines:
+- Respond in French unless the user explicitly asks for another language.
 - Be specific and refer to actual numbers from their portfolio
 - Provide actionable recommendations
 - Consider risk tolerance based on their current allocation
@@ -88,8 +95,23 @@ ${portfolio.goals.map((g: FinancialGoal) => `- ${g.title}: Target ${g.amount || 
 
 Remember: You are their trusted financial advisor with full visibility into their finances. Provide personalized, data-driven advice.`
 
+  const key = apiKey || process.env.OPENAI_API_KEY
+
+  if (!key) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Missing OpenAI API key. Set an API key in localStorage under 'openai_api_key' or configure the server with OPENAI_API_KEY.",
+      }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    )
+  }
+
+  const openai = createOpenAI({ apiKey: key })
+  const modelId = process.env.OPENAI_MODEL || "gpt-5.2"
+
   const result = streamText({
-    model: "openai/gpt-4o-mini",
+    model: openai(modelId),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
   })
