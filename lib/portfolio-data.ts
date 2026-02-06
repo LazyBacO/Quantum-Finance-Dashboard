@@ -105,6 +105,15 @@ export interface AlertThreshold {
   status: "ok" | "warning" | "critical"
 }
 
+export interface PlanningScenario {
+  id: string
+  label: string
+  description: string
+  rateDelta: number
+  marketShock: number
+  incomeDelta: number
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -508,6 +517,41 @@ export const ALERTS_THRESHOLDS: AlertThreshold[] = [
     threshold: 500,
     current: 460,
     status: "warning",
+  },
+]
+
+export const PLANNING_SCENARIOS: PlanningScenario[] = [
+  {
+    id: "base",
+    label: "Base",
+    description: "Hypothèse centrale avec croissance stable.",
+    rateDelta: 0,
+    marketShock: 0,
+    incomeDelta: 0,
+  },
+  {
+    id: "low-rate",
+    label: "Taux bas",
+    description: "Rendements inférieurs sur la durée.",
+    rateDelta: -2,
+    marketShock: 0,
+    incomeDelta: 0,
+  },
+  {
+    id: "market-dip",
+    label: "Marché baissier",
+    description: "Choc initial suivi d'une reprise lente.",
+    rateDelta: -1.5,
+    marketShock: -0.15,
+    incomeDelta: 0,
+  },
+  {
+    id: "income-loss",
+    label: "Perte de revenu",
+    description: "Baisse de revenu et d'épargne.",
+    rateDelta: 0,
+    marketShock: 0,
+    incomeDelta: -0.25,
   },
 ]
 

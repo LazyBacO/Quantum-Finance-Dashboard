@@ -16,6 +16,7 @@ import {
   FINANCIAL_GOALS as DEFAULT_GOALS,
   STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
   ALERTS_THRESHOLDS as DEFAULT_ALERTS_THRESHOLDS,
+  PLANNING_SCENARIOS as DEFAULT_PLANNING_SCENARIOS,
   type AllocationActual,
   type AllocationTarget,
   type NetWorthBreakdownItem,
@@ -29,6 +30,7 @@ import {
   type BudgetCategory,
   type CashflowForecastPoint,
   type AlertThreshold,
+  type PlanningScenario,
 } from "./portfolio-data"
 
 // LocalStorage keys for persistence
@@ -167,6 +169,7 @@ interface PortfolioContextType {
   budgets: BudgetCategory[]
   cashflowForecast: CashflowForecastPoint[]
   alertsThresholds: AlertThreshold[]
+  planningScenarios: PlanningScenario[]
 
   // Computed values
   totalBalance: string
@@ -362,6 +365,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       budgets: DEFAULT_BUDGETS,
       cashflowForecast: DEFAULT_CASHFLOW_FORECAST,
       alertsThresholds: DEFAULT_ALERTS_THRESHOLDS,
+      planningScenarios: DEFAULT_PLANNING_SCENARIOS,
       totalBalance,
       lastSaved,
     }),
