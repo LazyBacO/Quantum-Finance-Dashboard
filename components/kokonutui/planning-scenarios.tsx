@@ -15,6 +15,12 @@ const formatPercent = (value: number) => `${value > 0 ? "+" : ""}${value.toFixed
 
 const numberInputClasses =
   "w-full rounded-lg border border-border/60 bg-background/40 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary"
+const chartColors = [
+  "hsl(var(--primary))",
+  "hsl(173 80% 34%)",
+  "hsl(43 96% 56%)",
+  "hsl(0 84% 60%)",
+]
 
 type ProjectionResult = {
   id: string
@@ -41,12 +47,25 @@ const buildSparkline = (values: number[], width = 120, height = 32) => {
     .join(" ")
 }
 
+const buildLinePath = (values: number[], width: number, height: number, min: number, max: number) => {
+  if (values.length === 0) return ""
+  const range = Math.max(max - min, 1)
+  return values
+    .map((value, index) => {
+      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * width
+      const y = height - ((value - min) / range) * height
+      return `${index === 0 ? "M" : "L"}${x} ${y}`
+    })
+    .join(" ")
+}
+
 export default function PlanningScenarios({ className }: PlanningScenariosProps) {
   const { planningScenarios } = usePortfolio()
   const [age, setAge] = useState(34)
   const [income, setIncome] = useState(58000)
   const [savings, setSavings] = useState(12000)
   const [returnRate, setReturnRate] = useState(6)
+  const [hiddenScenarioIds, setHiddenScenarioIds] = useState<Set<string>>(new Set())
 
   const projectionYears = Math.max(5, Math.min(30, 65 - age))
 
@@ -81,6 +100,13 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
   }, [planningScenarios, income, savings, returnRate, projectionYears])
 
   const baseline = results.find((scenario) => scenario.id === "base") ?? results[0]
+  const visibleResults = results.filter((scenario) => !hiddenScenarioIds.has(scenario.id))
+  const chartResults = visibleResults.length > 0 ? visibleResults : results
+  const chartValues = chartResults.flatMap((scenario) => scenario.values)
+  const chartMin = chartValues.length ? Math.min(...chartValues) : 0
+  const chartMax = chartValues.length ? Math.max(...chartValues) : 0
+  const chartWidth = 640
+  const chartHeight = 220
 
   return (
     <div className={cn("w-full fx-panel", className)}>
@@ -185,6 +211,82 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
       </div>
 
       <div className="p-4">
+        <div className="rounded-lg border border-border/60 bg-background/60 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Projection annuelle</p>
+              <h4 className="text-sm font-semibold text-foreground">Évolution par scénario</h4>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {results.map((scenario, index) => {
+                const isHidden = hiddenScenarioIds.has(scenario.id)
+                return (
+                  <button
+                    key={scenario.id}
+                    type="button"
+                    onClick={() =>
+                      setHiddenScenarioIds((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(scenario.id)) {
+                          next.delete(scenario.id)
+                        } else {
+                          next.add(scenario.id)
+                        }
+                        return next
+                      })
+                    }
+                    aria-pressed={!isHidden}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium transition",
+                      isHidden
+                        ? "border-border/60 bg-background/40 text-muted-foreground"
+                        : "border-transparent bg-muted text-foreground"
+                    )}
+                  >
+                    <span
+                      className={cn("h-2 w-2 rounded-full", isHidden && "opacity-40")}
+                      style={{ backgroundColor: chartColors[index % chartColors.length] }}
+                    />
+                    {scenario.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="mt-4">
+            <svg
+              width="100%"
+              height={chartHeight}
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+              role="img"
+              aria-label="Projection des scénarios"
+              className="overflow-visible"
+            >
+              <defs>
+                <linearGradient id="chartGrid" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--border))" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="hsl(var(--border))" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <rect width={chartWidth} height={chartHeight} fill="url(#chartGrid)" opacity="0.15" />
+              <g stroke="hsl(var(--border))" strokeDasharray="4 6" strokeWidth="1">
+                {[0.25, 0.5, 0.75].map((step) => (
+                  <line key={step} x1="0" x2={chartWidth} y1={chartHeight * step} y2={chartHeight * step} />
+                ))}
+              </g>
+              {chartResults.map((scenario, index) => (
+                <path
+                  key={scenario.id}
+                  d={buildLinePath(scenario.values, chartWidth, chartHeight, chartMin, chartMax)}
+                  fill="none"
+                  stroke={chartColors[index % chartColors.length]}
+                  strokeWidth="2.5"
+                />
+              ))}
+            </svg>
+          </div>
+        </div>
+
         <div className="overflow-hidden rounded-lg border border-border/60">
           <table className="w-full text-left text-xs">
             <thead className="bg-muted/40 text-muted-foreground">
