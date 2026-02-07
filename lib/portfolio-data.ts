@@ -671,6 +671,7 @@ export function getPortfolioSummary() {
     accounts: ACCOUNTS,
     transactions: TRANSACTIONS,
     financialGoals: FINANCIAL_GOALS,
+    diversificationBreakdown: DIVERSIFICATION_BREAKDOWN,
     summary: {
       totalSavings,
       totalInvestments,
