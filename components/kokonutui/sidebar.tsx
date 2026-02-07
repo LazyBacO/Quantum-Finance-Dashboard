@@ -85,10 +85,10 @@ export default function Sidebar() {
                   <NavItem href="/dashboard" icon={Home}>
                     Dashboard
                   </NavItem>
-                  <NavItem href="#ai-advisor" icon={Bot}>
+                  <NavItem href="/dashboard#ai-advisor" icon={Bot}>
                     AI Advisor
                   </NavItem>
-                  <NavItem href="#accounts" icon={BarChart2}>
+                  <NavItem href="/dashboard#accounts" icon={BarChart2}>
                     Accounts Overview
                   </NavItem>
                 </div>
@@ -99,13 +99,13 @@ export default function Sidebar() {
                   Portfolio
                 </div>
                 <div className="space-y-1">
-                  <NavItem href="#accounts" icon={Wallet}>
+                  <NavItem href="/dashboard#accounts" icon={Wallet}>
                     Accounts
                   </NavItem>
-                  <NavItem href="#stock-actions" icon={TrendingUp}>
+                  <NavItem href="/dashboard#stock-actions" icon={TrendingUp}>
                     Stock Actions
                   </NavItem>
-                  <NavItem href="#transactions" icon={Receipt}>
+                  <NavItem href="/dashboard#transactions" icon={Receipt}>
                     Transactions
                   </NavItem>
                 </div>
@@ -116,16 +116,16 @@ export default function Sidebar() {
                   Planning
                 </div>
                 <div className="space-y-1">
-                  <NavItem href="#goals" icon={Target}>
+                  <NavItem href="/dashboard#goals" icon={Target}>
                     Goals
                   </NavItem>
-                  <NavItem href="#goals" icon={PiggyBank}>
+                  <NavItem href="/dashboard#goals" icon={PiggyBank}>
                     Savings
                   </NavItem>
-                  <NavItem href="#transactions" icon={CreditCard}>
+                  <NavItem href="/dashboard#transactions" icon={CreditCard}>
                     Budgets
                   </NavItem>
-                  <NavItem href="#integrations" icon={Plug}>
+                  <NavItem href="/dashboard#integrations" icon={Plug}>
                     Intégrations
                   </NavItem>
                 </div>

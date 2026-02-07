@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import {
   Target,
   CreditCard,
@@ -30,9 +31,52 @@ import { PortfolioProvider } from "@/lib/portfolio-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Content() {
+  const sectionToTab = useMemo(
+    () => ({
+      "ai-advisor": "overview",
+      alerts: "overview",
+      "net-worth": "overview",
+      accounts: "portfolio",
+      transactions: "portfolio",
+      "performance-allocation": "portfolio",
+      "stock-actions": "portfolio",
+      rebalancing: "portfolio",
+      "budget-cashflow": "budget",
+      "planning-scenarios": "budget",
+      goals: "budget",
+      integrations: "integrations",
+    }),
+    []
+  )
+
+  const [tabValue, setTabValue] = useState("overview")
+
+  useEffect(() => {
+    const syncTabWithHash = () => {
+      const hash = window.location.hash.replace("#", "")
+      if (!hash) {
+        return
+      }
+      const nextTab = sectionToTab[hash as keyof typeof sectionToTab]
+      if (nextTab) {
+        setTabValue(nextTab)
+        requestAnimationFrame(() => {
+          const target = document.getElementById(hash)
+          target?.scrollIntoView({ behavior: "smooth", block: "start" })
+        })
+      }
+    }
+
+    syncTabWithHash()
+    window.addEventListener("hashchange", syncTabWithHash)
+    return () => {
+      window.removeEventListener("hashchange", syncTabWithHash)
+    }
+  }, [sectionToTab])
+
   return (
     <PortfolioProvider>
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={tabValue} onValueChange={setTabValue} className="space-y-6">
         <TabsList className="flex h-auto flex-nowrap justify-start gap-2 overflow-x-auto whitespace-nowrap bg-transparent p-0">
           <TabsTrigger value="overview">Vue d’ensemble</TabsTrigger>
           <TabsTrigger value="portfolio">Portefeuille</TabsTrigger>
