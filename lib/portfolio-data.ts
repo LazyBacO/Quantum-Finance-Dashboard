@@ -142,6 +142,34 @@ export interface PlanningScenario {
   incomeDelta: number
 }
 
+export interface DebtItem {
+  id: string
+  label: string
+  lender: string
+  balance: number
+  apr: number
+  minPayment: number
+  nextPaymentDate: string
+  type: "credit-card" | "loan" | "auto" | "student"
+}
+
+export interface DebtStrategyComparison {
+  id: string
+  label: string
+  description: string
+  totalInterest: number
+  payoffMonths: number
+  monthlyPayment: number
+  highlight: string
+}
+
+export interface DebtInterestProjectionPoint {
+  id: string
+  label: string
+  interest: number
+  cumulative: number
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -641,6 +669,119 @@ export const PLANNING_SCENARIOS: PlanningScenario[] = [
     rateDelta: 0,
     marketShock: 0,
     incomeDelta: -0.25,
+  },
+]
+
+export const DEBT_ITEMS: DebtItem[] = [
+  {
+    id: "debt-cc-1",
+    label: "Carte premium",
+    lender: "Banque Horizon",
+    balance: 4620,
+    apr: 19.9,
+    minPayment: 140,
+    nextPaymentDate: "15 Oct 2024",
+    type: "credit-card",
+  },
+  {
+    id: "debt-cc-2",
+    label: "Carte cashback",
+    lender: "Union Finance",
+    balance: 1850,
+    apr: 16.2,
+    minPayment: 85,
+    nextPaymentDate: "22 Oct 2024",
+    type: "credit-card",
+  },
+  {
+    id: "debt-auto-1",
+    label: "Prêt auto",
+    lender: "AutoLease",
+    balance: 9200,
+    apr: 6.4,
+    minPayment: 260,
+    nextPaymentDate: "03 Oct 2024",
+    type: "auto",
+  },
+  {
+    id: "debt-loan-1",
+    label: "Prêt personnel",
+    lender: "Nova Crédit",
+    balance: 5400,
+    apr: 11.5,
+    minPayment: 175,
+    nextPaymentDate: "28 Sep 2024",
+    type: "loan",
+  },
+  {
+    id: "debt-student-1",
+    label: "Prêt étudiant",
+    lender: "Campus Plus",
+    balance: 12800,
+    apr: 4.2,
+    minPayment: 210,
+    nextPaymentDate: "07 Oct 2024",
+    type: "student",
+  },
+]
+
+export const DEBT_STRATEGY_COMPARISON: DebtStrategyComparison[] = [
+  {
+    id: "snowball",
+    label: "Snowball",
+    description: "Priorité aux petites dettes pour maximiser l'élan.",
+    totalInterest: 4860,
+    payoffMonths: 31,
+    monthlyPayment: 980,
+    highlight: "Motivation rapide (+2 dettes clôturées)",
+  },
+  {
+    id: "avalanche",
+    label: "Avalanche",
+    description: "Priorité aux taux élevés pour réduire les intérêts.",
+    totalInterest: 3820,
+    payoffMonths: 28,
+    monthlyPayment: 980,
+    highlight: "Économie d'intérêts estimée à 1 040 $",
+  },
+]
+
+export const DEBT_INTEREST_PROJECTION: DebtInterestProjectionPoint[] = [
+  {
+    id: "oct",
+    label: "Oct",
+    interest: 312,
+    cumulative: 312,
+  },
+  {
+    id: "nov",
+    label: "Nov",
+    interest: 298,
+    cumulative: 610,
+  },
+  {
+    id: "dec",
+    label: "Déc",
+    interest: 285,
+    cumulative: 895,
+  },
+  {
+    id: "jan",
+    label: "Jan",
+    interest: 271,
+    cumulative: 1166,
+  },
+  {
+    id: "feb",
+    label: "Fév",
+    interest: 258,
+    cumulative: 1424,
+  },
+  {
+    id: "mar",
+    label: "Mar",
+    interest: 244,
+    cumulative: 1668,
   },
 ]
 

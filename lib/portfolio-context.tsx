@@ -18,6 +18,9 @@ import {
   STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
   ALERTS_THRESHOLDS as DEFAULT_ALERTS_THRESHOLDS,
   PLANNING_SCENARIOS as DEFAULT_PLANNING_SCENARIOS,
+  DEBT_ITEMS as DEFAULT_DEBT_ITEMS,
+  DEBT_STRATEGY_COMPARISON as DEFAULT_DEBT_STRATEGY_COMPARISON,
+  DEBT_INTEREST_PROJECTION as DEFAULT_DEBT_INTEREST_PROJECTION,
   type AllocationActual,
   type AllocationTarget,
   type NetWorthBreakdownItem,
@@ -33,6 +36,9 @@ import {
   type AlertThreshold,
   type PlanningScenario,
   type DiversificationBreakdown,
+  type DebtItem,
+  type DebtStrategyComparison,
+  type DebtInterestProjectionPoint,
 } from "./portfolio-data"
 
 // LocalStorage keys for persistence
@@ -173,6 +179,9 @@ interface PortfolioContextType {
   cashflowForecast: CashflowForecastPoint[]
   alertsThresholds: AlertThreshold[]
   planningScenarios: PlanningScenario[]
+  debtItems: DebtItem[]
+  debtStrategyComparison: DebtStrategyComparison[]
+  debtInterestProjection: DebtInterestProjectionPoint[]
 
   // Computed values
   totalBalance: string
@@ -370,6 +379,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       cashflowForecast: DEFAULT_CASHFLOW_FORECAST,
       alertsThresholds: DEFAULT_ALERTS_THRESHOLDS,
       planningScenarios: DEFAULT_PLANNING_SCENARIOS,
+      debtItems: DEFAULT_DEBT_ITEMS,
+      debtStrategyComparison: DEFAULT_DEBT_STRATEGY_COMPARISON,
+      debtInterestProjection: DEFAULT_DEBT_INTEREST_PROJECTION,
       totalBalance,
       lastSaved,
     }),
