@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import {
   Target,
   CreditCard,
@@ -30,9 +31,68 @@ import { PortfolioProvider } from "@/lib/portfolio-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Content() {
+  const sectionToTab = useMemo(
+    () => ({
+      "ai-advisor": "overview",
+      alerts: "overview",
+      "net-worth": "overview",
+      accounts: "portfolio",
+      transactions: "portfolio",
+      "performance-allocation": "portfolio",
+      "stock-actions": "portfolio",
+      rebalancing: "portfolio",
+      "budget-cashflow": "budget",
+      "planning-scenarios": "budget",
+      goals: "budget",
+      integrations: "integrations",
+    }),
+    []
+  )
+
+  const [tabValue, setTabValue] = useState("overview")
+  const [pendingHash, setPendingHash] = useState<string | null>(null)
+
+  useEffect(() => {
+    const syncTabWithHash = () => {
+      const hash = window.location.hash.replace("#", "")
+      if (!hash) {
+        return
+      }
+      setPendingHash(hash)
+      const nextTab = sectionToTab[hash as keyof typeof sectionToTab]
+      if (nextTab) {
+        setTabValue(nextTab)
+      }
+    }
+
+    syncTabWithHash()
+    window.addEventListener("hashchange", syncTabWithHash)
+    return () => {
+      window.removeEventListener("hashchange", syncTabWithHash)
+    }
+  }, [sectionToTab])
+
+  useEffect(() => {
+    if (!pendingHash) {
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      const target = document.getElementById(pendingHash)
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" })
+        setPendingHash(null)
+      }
+    }, 50)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [pendingHash, tabValue])
+
   return (
     <PortfolioProvider>
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={tabValue} onValueChange={setTabValue} className="space-y-6">
         <TabsList className="flex h-auto flex-nowrap justify-start gap-2 overflow-x-auto whitespace-nowrap bg-transparent p-0">
           <TabsTrigger value="overview">Vue d’ensemble</TabsTrigger>
           <TabsTrigger value="portfolio">Portefeuille</TabsTrigger>
