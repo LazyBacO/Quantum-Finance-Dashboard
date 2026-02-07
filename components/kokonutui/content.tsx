@@ -33,7 +33,7 @@ export default function Content() {
   return (
     <PortfolioProvider>
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="flex h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+        <TabsList className="flex h-auto flex-nowrap justify-start gap-2 overflow-x-auto whitespace-nowrap bg-transparent p-0">
           <TabsTrigger value="overview">Vue d’ensemble</TabsTrigger>
           <TabsTrigger value="portfolio">Portefeuille</TabsTrigger>
           <TabsTrigger value="budget">Budget &amp; Planification</TabsTrigger>
