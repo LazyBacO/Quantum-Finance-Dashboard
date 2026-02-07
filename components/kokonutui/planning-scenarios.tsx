@@ -310,13 +310,11 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
               Ajustez vos hypothèses pour comparer les scénarios de croissance.
             </p>
           </div>
-          <div className="flex flex-wrap items-start gap-3">
-            <div className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-              <div>Horizon estimé: {projectionYears} ans</div>
-              <div>Objectif retraite: 65 ans</div>
-            </div>
-            <details className="relative">
-              <summary className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs font-medium text-foreground transition hover:border-primary/60">
+          <div className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+            <div>Horizon estimé: {projectionYears} ans</div>
+            <div>Objectif retraite: 65 ans</div>
+            <details className="relative mt-2">
+              <summary className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-background/80 px-2 py-1 text-[11px] font-medium text-foreground transition hover:border-primary/60">
                 Exporter
               </summary>
               <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-lg border border-border/60 bg-background/95 p-2 shadow-lg">
