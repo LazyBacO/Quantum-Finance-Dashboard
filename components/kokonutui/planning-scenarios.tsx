@@ -48,6 +48,8 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
   const [income, setIncome] = useState(58000)
   const [savings, setSavings] = useState(12000)
   const [returnRate, setReturnRate] = useState(6)
+  const [sortKey, setSortKey] = useState<"label" | "value-desc" | "value-asc">("value-desc")
+  const [highlightBaseline, setHighlightBaseline] = useState(true)
 
   const projectionYears = Math.max(5, Math.min(30, 65 - age))
 
@@ -82,6 +84,24 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
   }, [planningScenarios, income, savings, returnRate, projectionYears])
 
   const baseline = results.find((scenario) => scenario.id === "base") ?? results[0]
+  const bestScenario = results.reduce<ProjectionResult | undefined>(
+    (best, scenario) => (!best || scenario.finalValue > best.finalValue ? scenario : best),
+    undefined,
+  )
+  const worstScenario = results.reduce<ProjectionResult | undefined>(
+    (worst, scenario) => (!worst || scenario.finalValue < worst.finalValue ? scenario : worst),
+    undefined,
+  )
+  const sortedResults = useMemo(() => {
+    const copy = [...results]
+    if (sortKey === "label") {
+      return copy.sort((a, b) => a.label.localeCompare(b.label))
+    }
+    if (sortKey === "value-asc") {
+      return copy.sort((a, b) => a.finalValue - b.finalValue)
+    }
+    return copy.sort((a, b) => b.finalValue - a.finalValue)
+  }, [results, sortKey])
   const handleExportCsv = () => {
     exportPlanningScenariosCsv({
       age,
@@ -191,7 +211,56 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
       </div>
 
       <div className="p-4">
-        <div className="overflow-hidden rounded-lg border border-border/60">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+            <p className="text-[11px] text-muted-foreground">Scénario gagnant</p>
+            <p className="text-sm font-semibold text-foreground">{bestScenario?.label ?? "—"}</p>
+            <p className="text-xs text-muted-foreground">
+              {bestScenario ? formatCurrency(bestScenario.finalValue) : "Non disponible"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+            <p className="text-[11px] text-muted-foreground">Scénario prudent</p>
+            <p className="text-sm font-semibold text-foreground">{worstScenario?.label ?? "—"}</p>
+            <p className="text-xs text-muted-foreground">
+              {worstScenario ? formatCurrency(worstScenario.finalValue) : "Non disponible"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+            <p className="text-[11px] text-muted-foreground">Référence (base)</p>
+            <p className="text-sm font-semibold text-foreground">{baseline?.label ?? "—"}</p>
+            <p className="text-xs text-muted-foreground">
+              {baseline ? formatCurrency(baseline.finalValue) : "Non disponible"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wide">Affichage</span>
+            <select
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value as "label" | "value-desc" | "value-asc")}
+              className="rounded-md border border-border/60 bg-background/60 px-2 py-1 text-xs text-foreground"
+            >
+              <option value="value-desc">Trier par valeur (desc)</option>
+              <option value="value-asc">Trier par valeur (asc)</option>
+              <option value="label">Trier par nom</option>
+            </select>
+            <label className="flex items-center gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1">
+              <input
+                type="checkbox"
+                checked={highlightBaseline}
+                onChange={(event) => setHighlightBaseline(event.target.checked)}
+                className="h-3 w-3 rounded border-border/60"
+              />
+              Mettre en avant la base
+            </label>
+          </div>
+          <span className="text-[11px]">Scénarios: {results.length}</span>
+        </div>
+
+        <div className="mt-3 overflow-hidden rounded-lg border border-border/60">
           <table className="w-full text-left text-xs">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
@@ -202,15 +271,38 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
               </tr>
             </thead>
             <tbody>
-              {results.map((scenario) => {
+              {sortedResults.map((scenario) => {
                 const diff = baseline ? scenario.finalValue - baseline.finalValue : 0
+                const isBaseline = highlightBaseline && scenario.id === baseline?.id
+                const isBest = scenario.id === bestScenario?.id
+                const isWorst = scenario.id === worstScenario?.id
                 return (
                   <tr
                     key={scenario.id}
-                    className="border-t border-border/60 bg-background/60 align-top"
+                    className={cn(
+                      "border-t border-border/60 bg-background/60 align-top transition-colors",
+                      isBaseline && "bg-primary/5",
+                    )}
                   >
                     <td className="px-3 py-3">
-                      <div className="text-sm font-semibold text-foreground">{scenario.label}</div>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        {scenario.label}
+                        {isBest ? (
+                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+                            Meilleur
+                          </span>
+                        ) : null}
+                        {isWorst ? (
+                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-500">
+                            Prudent
+                          </span>
+                        ) : null}
+                        {isBaseline ? (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                            Base
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">{scenario.description}</p>
                     </td>
                     <td className="px-3 py-3">
