@@ -27,6 +27,30 @@ type ProjectionResult = {
   finalValue: number
 }
 
+const planningPresets = [
+  {
+    id: "prudent",
+    label: "Prudent",
+    income: 52000,
+    savings: 8000,
+    returnRate: 4.5,
+  },
+  {
+    id: "equilibre",
+    label: "Équilibré",
+    income: 58000,
+    savings: 12000,
+    returnRate: 6,
+  },
+  {
+    id: "dynamique",
+    label: "Dynamique",
+    income: 70000,
+    savings: 18000,
+    returnRate: 7.5,
+  },
+]
+
 const buildSparkline = (values: number[], width = 120, height = 32) => {
   if (values.length === 0) return ""
   const min = Math.min(...values)
@@ -81,6 +105,16 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
   }, [planningScenarios, income, savings, returnRate, projectionYears])
 
   const baseline = results.find((scenario) => scenario.id === "base") ?? results[0]
+  const activePresetId = useMemo(() => {
+    return (
+      planningPresets.find(
+        (preset) =>
+          preset.income === income &&
+          preset.savings === savings &&
+          preset.returnRate === returnRate,
+      )?.id ?? null
+    )
+  }, [income, savings, returnRate])
 
   return (
     <div className={cn("w-full fx-panel", className)}>
@@ -99,52 +133,78 @@ export default function PlanningScenarios({ className }: PlanningScenariosProps)
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-4">
-          <label className="space-y-2 text-xs text-muted-foreground">
-            <span>Âge</span>
-            <input
-              type="number"
-              min={18}
-              max={70}
-              value={age}
-              onChange={(event) => setAge(Number(event.target.value) || 0)}
-              className={numberInputClasses}
-            />
-          </label>
-          <label className="space-y-2 text-xs text-muted-foreground">
-            <span>Revenu annuel</span>
-            <input
-              type="number"
-              min={0}
-              step={1000}
-              value={income}
-              onChange={(event) => setIncome(Number(event.target.value) || 0)}
-              className={numberInputClasses}
-            />
-          </label>
-          <label className="space-y-2 text-xs text-muted-foreground">
-            <span>Épargne annuelle</span>
-            <input
-              type="number"
-              min={0}
-              step={500}
-              value={savings}
-              onChange={(event) => setSavings(Number(event.target.value) || 0)}
-              className={numberInputClasses}
-            />
-          </label>
-          <label className="space-y-2 text-xs text-muted-foreground">
-            <span>Rendement estimé (%)</span>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              step={0.1}
-              value={returnRate}
-              onChange={(event) => setReturnRate(Number(event.target.value) || 0)}
-              className={numberInputClasses}
-            />
-          </label>
+        <div className="mt-4 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {planningPresets.map((preset) => {
+              const isActive = activePresetId === preset.id
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    setIncome(preset.income)
+                    setSavings(preset.savings)
+                    setReturnRate(preset.returnRate)
+                  }}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
+                    isActive
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-border/60 bg-background/40 text-muted-foreground hover:border-border hover:text-foreground",
+                  )}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            <label className="space-y-2 text-xs text-muted-foreground">
+              <span>Âge</span>
+              <input
+                type="number"
+                min={18}
+                max={70}
+                value={age}
+                onChange={(event) => setAge(Number(event.target.value) || 0)}
+                className={numberInputClasses}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-muted-foreground">
+              <span>Revenu annuel</span>
+              <input
+                type="number"
+                min={0}
+                step={1000}
+                value={income}
+                onChange={(event) => setIncome(Number(event.target.value) || 0)}
+                className={numberInputClasses}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-muted-foreground">
+              <span>Épargne annuelle</span>
+              <input
+                type="number"
+                min={0}
+                step={500}
+                value={savings}
+                onChange={(event) => setSavings(Number(event.target.value) || 0)}
+                className={numberInputClasses}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-muted-foreground">
+              <span>Rendement estimé (%)</span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                step={0.1}
+                value={returnRate}
+                onChange={(event) => setReturnRate(Number(event.target.value) || 0)}
+                className={numberInputClasses}
+              />
+            </label>
+          </div>
         </div>
       </div>
 
