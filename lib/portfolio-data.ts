@@ -133,6 +133,15 @@ export interface AlertThreshold {
   status: "ok" | "warning" | "critical"
 }
 
+export interface PortfolioAlert {
+  id: string
+  title: string
+  description: string
+  category: "prix" | "cash buffer" | "drawdown"
+  status: "actif" | "résolu" | "critique"
+  updatedAt: string
+}
+
 export interface PlanningScenario {
   id: string
   label: string
@@ -606,6 +615,33 @@ export const ALERTS_THRESHOLDS: AlertThreshold[] = [
     threshold: 500,
     current: 460,
     status: "warning",
+  },
+]
+
+export const ALERTS: PortfolioAlert[] = [
+  {
+    id: "price-alert",
+    title: "Prix cible atteint sur NVIDIA",
+    description: "NVDA a franchi le seuil de 15% de hausse sur 30 jours.",
+    category: "prix",
+    status: "actif",
+    updatedAt: "Il y a 10 min",
+  },
+  {
+    id: "cash-buffer",
+    title: "Cash buffer sous le minimum",
+    description: "Le coussin de liquidités est à 18% (objectif 25%).",
+    category: "cash buffer",
+    status: "critique",
+    updatedAt: "Il y a 1 h 12",
+  },
+  {
+    id: "drawdown-alert",
+    title: "Drawdown global stabilisé",
+    description: "Le drawdown repasse sous -6% après rééquilibrage.",
+    category: "drawdown",
+    status: "résolu",
+    updatedAt: "Hier à 17:40",
   },
 ]
 

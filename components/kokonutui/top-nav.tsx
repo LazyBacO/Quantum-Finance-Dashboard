@@ -2,10 +2,11 @@
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
-import { Bell, ChevronRight } from "lucide-react"
+import { AlertTriangle, Bell, ChevronRight } from "lucide-react"
 import Profile01 from "./profile-01"
 import Link from "next/link"
 import { ThemeToggle } from "../theme-toggle"
+import { ALERTS } from "@/lib/portfolio-data"
 
 interface BreadcrumbItem {
   label: string
@@ -17,6 +18,7 @@ export default function TopNav() {
     { label: "InvestAI", href: "#" },
     { label: "Dashboard", href: "#" },
   ]
+  const criticalAlerts = ALERTS.filter((alert) => alert.status === "critique").length
 
   return (
     <nav className="px-3 sm:px-6 flex items-center justify-between bg-transparent h-full">
@@ -39,6 +41,18 @@ export default function TopNav() {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 ml-auto sm:ml-0">
+        <button
+          type="button"
+          className="relative p-1.5 sm:p-2 hover:bg-accent/60 rounded-full transition-colors"
+        >
+          <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+          {criticalAlerts > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-semibold text-white">
+              {criticalAlerts}
+            </span>
+          )}
+        </button>
+
         <button
           type="button"
           className="p-1.5 sm:p-2 hover:bg-accent/60 rounded-full transition-colors"
@@ -70,4 +84,3 @@ export default function TopNav() {
     </nav>
   )
 }
-

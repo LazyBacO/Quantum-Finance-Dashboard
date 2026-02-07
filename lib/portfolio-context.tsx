@@ -6,6 +6,7 @@ import {
   ALLOCATION_ACTUAL as DEFAULT_ALLOCATION_ACTUAL,
   ALLOCATION_TARGETS as DEFAULT_ALLOCATION_TARGETS,
   ASSET_BREAKDOWN as DEFAULT_ASSET_BREAKDOWN,
+  ALERTS as DEFAULT_ALERTS,
   BUDGETS as DEFAULT_BUDGETS,
   CASHFLOW_FORECAST as DEFAULT_CASHFLOW_FORECAST,
   DIVERSIFICATION_BREAKDOWN as DEFAULT_DIVERSIFICATION_BREAKDOWN,
@@ -30,6 +31,7 @@ import {
   type StockAction,
   type BudgetCategory,
   type CashflowForecastPoint,
+  type PortfolioAlert,
   type AlertThreshold,
   type PlanningScenario,
   type DiversificationBreakdown,
@@ -171,6 +173,7 @@ interface PortfolioContextType {
   liabilityBreakdown: NetWorthBreakdownItem[]
   budgets: BudgetCategory[]
   cashflowForecast: CashflowForecastPoint[]
+  alerts: PortfolioAlert[]
   alertsThresholds: AlertThreshold[]
   planningScenarios: PlanningScenario[]
 
@@ -368,6 +371,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       liabilityBreakdown: DEFAULT_LIABILITY_BREAKDOWN,
       budgets: DEFAULT_BUDGETS,
       cashflowForecast: DEFAULT_CASHFLOW_FORECAST,
+      alerts: DEFAULT_ALERTS,
       alertsThresholds: DEFAULT_ALERTS_THRESHOLDS,
       planningScenarios: DEFAULT_PLANNING_SCENARIOS,
       totalBalance,
