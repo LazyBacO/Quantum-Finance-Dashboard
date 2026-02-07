@@ -142,6 +142,29 @@ export interface PlanningScenario {
   incomeDelta: number
 }
 
+export interface TaxGainSummary {
+  amount: number
+  change: number
+  note: string
+}
+
+export interface DividendTaxEstimate {
+  grossDividends: number
+  taxableBase: number
+  flatTaxRate: number
+  estimatedTax: number
+  paymentSchedule: string
+  note: string
+}
+
+export interface TaxOptimizationData {
+  unrealizedGains: TaxGainSummary
+  realizedGains: TaxGainSummary
+  dividendTaxEstimate: DividendTaxEstimate
+  peaAdvice: string[]
+  lifeInsuranceAdvice: string[]
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -643,6 +666,35 @@ export const PLANNING_SCENARIOS: PlanningScenario[] = [
     incomeDelta: -0.25,
   },
 ]
+
+export const TAX_OPTIMIZATION: TaxOptimizationData = {
+  unrealizedGains: {
+    amount: 18450,
+    change: 6.4,
+    note: "Latent sur ETF monde & actions tech",
+  },
+  realizedGains: {
+    amount: 3420,
+    change: -1.8,
+    note: "Prises de bénéfices récentes",
+  },
+  dividendTaxEstimate: {
+    grossDividends: 1280,
+    taxableBase: 1152,
+    flatTaxRate: 0.3,
+    estimatedTax: 346,
+    paymentSchedule: "Acompte mensuel ou prélèvement PFU",
+    note: "Inclut 12,8% IR + 17,2% prélèvements sociaux",
+  },
+  peaAdvice: [
+    "Prioriser les arbitrages gagnants dans le PEA pour bénéficier de l'exonération après 5 ans.",
+    "Conserver une poche liquidité pour saisir les corrections sans sortir du PEA.",
+  ],
+  lifeInsuranceAdvice: [
+    "Utiliser les rachats partiels programmés pour lisser la fiscalité annuelle.",
+    "Favoriser les versements sur les fonds euros en période de volatilité.",
+  ],
+}
 
 export const TOTAL_BALANCE = "$26,540.25"
 

@@ -12,6 +12,7 @@ import {
   ClipboardList,
   RefreshCcw,
   Plug,
+  Percent,
 } from "lucide-react"
 import List01 from "./list-01"
 import List02 from "./list-02"
@@ -24,6 +25,7 @@ import NetWorth from "./net-worth"
 import BudgetCashflow from "./budget-cashflow"
 import PlanningScenarios from "./planning-scenarios"
 import Integrations from "./integrations"
+import TaxOptimization from "./tax-optimization"
 import { PortfolioProvider } from "@/lib/portfolio-context"
 
 export default function Content() {
@@ -112,6 +114,18 @@ export default function Content() {
             </h2>
           </div>
           <BudgetCashflow className="w-full" />
+        </section>
+
+        <section id="tax-optimization" className="space-y-3 scroll-mt-24">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+              <Percent className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              Optimisation fiscale
+            </h2>
+          </div>
+          <TaxOptimization className="w-full" />
         </section>
 
         <section id="planning-scenarios" className="space-y-3 scroll-mt-24">
