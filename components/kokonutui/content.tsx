@@ -81,9 +81,9 @@ export default function Content() {
       const target = document.getElementById(pendingHash)
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "start" })
-        setPendingHash(null)
       }
-    }, 50)
+      setPendingHash(null)
+    }, 0)
 
     return () => {
       window.clearTimeout(timeout)
