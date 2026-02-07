@@ -142,6 +142,19 @@ export interface PlanningScenario {
   incomeDelta: number
 }
 
+export type DocumentCategory = "contracts" | "statements" | "certificates" | "tax"
+
+export interface DocumentMetadata {
+  id: string
+  title: string
+  category: DocumentCategory
+  description: string
+  period?: string
+  updatedAt: string
+  format: string
+  size: string
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
@@ -641,6 +654,85 @@ export const PLANNING_SCENARIOS: PlanningScenario[] = [
     rateDelta: 0,
     marketShock: 0,
     incomeDelta: -0.25,
+  },
+]
+
+export const DOCUMENTS: DocumentMetadata[] = [
+  {
+    id: "doc-contrat-compte",
+    title: "Contrat d'ouverture de compte",
+    category: "contracts",
+    description: "Conditions générales et annexes signées.",
+    updatedAt: "12 fév. 2024",
+    format: "PDF",
+    size: "1.2 Mo",
+  },
+  {
+    id: "doc-contrat-gestion",
+    title: "Mandat de gestion pilotée",
+    category: "contracts",
+    description: "Profil de risque et grille tarifaire.",
+    updatedAt: "28 janv. 2024",
+    format: "PDF",
+    size: "890 Ko",
+  },
+  {
+    id: "doc-releve-mensuel",
+    title: "Relevé mensuel - Mars 2024",
+    category: "statements",
+    description: "Synthèse des opérations du mois.",
+    period: "Mars 2024",
+    updatedAt: "03 avr. 2024",
+    format: "PDF",
+    size: "640 Ko",
+  },
+  {
+    id: "doc-releve-annuel",
+    title: "Relevé annuel 2023",
+    category: "statements",
+    description: "Récapitulatif des positions et performance.",
+    period: "Année 2023",
+    updatedAt: "15 janv. 2024",
+    format: "PDF",
+    size: "1.8 Mo",
+  },
+  {
+    id: "doc-attestation-residence",
+    title: "Attestation de résidence fiscale",
+    category: "certificates",
+    description: "Document certifiant votre résidence fiscale.",
+    updatedAt: "08 fév. 2024",
+    format: "PDF",
+    size: "320 Ko",
+  },
+  {
+    id: "doc-attestation-propriete",
+    title: "Attestation de propriété",
+    category: "certificates",
+    description: "Confirmation des avoirs détenus.",
+    updatedAt: "21 fév. 2024",
+    format: "PDF",
+    size: "410 Ko",
+  },
+  {
+    id: "doc-export-fiscal",
+    title: "Export fiscal annuel",
+    category: "tax",
+    description: "Synthèse fiscale complète pour la déclaration.",
+    period: "Année 2023",
+    updatedAt: "05 avr. 2024",
+    format: "CSV",
+    size: "240 Ko",
+  },
+  {
+    id: "doc-export-ifi",
+    title: "Export IFI",
+    category: "tax",
+    description: "Extraction dédiée à l'IFI.",
+    period: "Année 2023",
+    updatedAt: "05 avr. 2024",
+    format: "CSV",
+    size: "180 Ko",
   },
 ]
 

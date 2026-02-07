@@ -16,6 +16,7 @@ import {
   Target,
   Home,
   Plug,
+  FileText,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -84,6 +85,9 @@ export default function Sidebar() {
                 <div className="space-y-1">
                   <NavItem href="/dashboard" icon={Home}>
                     Dashboard
+                  </NavItem>
+                  <NavItem href="/documents" icon={FileText}>
+                    Documents
                   </NavItem>
                   <NavItem href="#ai-advisor" icon={Bot}>
                     AI Advisor
