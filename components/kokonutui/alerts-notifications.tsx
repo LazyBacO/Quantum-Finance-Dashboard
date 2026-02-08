@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { AlertTriangle, Bell, CalendarClock, CheckCircle2, ClipboardList } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Alerts from "./alerts"
@@ -11,102 +11,161 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  createAlert,
+  createTask,
+  getAlerts,
+  getNotificationPreferences,
+  getTasks,
+  saveNotificationPreferences,
+  updateTask,
+} from "@/lib/notification-client"
+import {
+  cadenceOptions,
+  defaultNotificationPreferences,
+  reminderOptions,
+  type AlertItem,
+  type NotificationPreferences,
+  type TaskItem,
+} from "@/lib/notification-types"
+import {
+  formatNotificationDate,
+  getNextAlertNotificationAt,
+  getNextTaskNotificationAt,
+  resolveNotificationChannels,
+} from "@/lib/notification-scheduler"
 
 interface AlertsNotificationsProps {
   className?: string
 }
 
-type TaskItem = {
-  id: string
-  title: string
-  dueDate: string
-  reminder: string
-  notes: string
-  channelEmail: boolean
-  channelPush: boolean
-  completed: boolean
-}
-
-type AlertItem = {
-  id: string
-  title: string
-  metric: string
-  threshold: string
-  cadence: string
-  channelEmail: boolean
-  channelPush: boolean
-}
-
 const inputClasses =
   "w-full rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary"
 
-const reminderOptions = ["Aucun", "1 heure avant", "24 heures avant", "1 semaine avant"]
-const cadenceOptions = ["Temps réel", "Quotidien", "Hebdomadaire", "Mensuel"]
-
 export default function AlertsNotifications({ className }: AlertsNotificationsProps) {
+  const [preferences, setPreferences] = useState<NotificationPreferences>(
+    defaultNotificationPreferences
+  )
   const [taskForm, setTaskForm] = useState({
     title: "",
     dueDate: "",
     reminder: reminderOptions[1],
     notes: "",
-    channelEmail: true,
-    channelPush: true,
+    channelEmail: defaultNotificationPreferences.email,
+    channelPush: defaultNotificationPreferences.push,
   })
   const [alertForm, setAlertForm] = useState({
     title: "",
     metric: "Allocation",
     threshold: "",
     cadence: cadenceOptions[0],
-    channelEmail: true,
+    channelEmail: defaultNotificationPreferences.email,
     channelPush: false,
   })
-  const [tasks, setTasks] = useState<TaskItem[]>([
-    {
-      id: "task-1",
-      title: "Rebalancer le portefeuille",
-      dueDate: "2024-08-28",
-      reminder: "24 heures avant",
-      notes: "Confirmer l'impact fiscal avant l'arbitrage.",
-      channelEmail: true,
-      channelPush: true,
-      completed: false,
-    },
-    {
-      id: "task-2",
-      title: "Rapprocher les dividendes",
-      dueDate: "2024-09-02",
-      reminder: "1 semaine avant",
-      notes: "Comparer avec les prévisions trimestrielles.",
-      channelEmail: true,
-      channelPush: false,
-      completed: false,
-    },
-  ])
-  const [alerts, setAlerts] = useState<AlertItem[]>([
-    {
-      id: "alert-1",
-      title: "Seuil de volatilité",
-      metric: "Risque",
-      threshold: "> 12%",
-      cadence: "Temps réel",
-      channelEmail: true,
-      channelPush: true,
-    },
-    {
-      id: "alert-2",
-      title: "Liquidité minimale",
-      metric: "Cash",
-      threshold: "< 15 000 €",
-      cadence: "Quotidien",
-      channelEmail: true,
-      channelPush: false,
-    },
-  ])
+  const [tasks, setTasks] = useState<TaskItem[]>([])
+  const [alerts, setAlerts] = useState<AlertItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const upcomingReminders = useMemo(
-    () => tasks.filter((task) => !task.completed && task.reminder !== "Aucun"),
-    [tasks]
-  )
+  useEffect(() => {
+    let isMounted = true
+
+    const loadData = async () => {
+      try {
+        const [storedPreferences, storedTasks, storedAlerts] = await Promise.all([
+          getNotificationPreferences(),
+          getTasks(),
+          getAlerts(),
+        ])
+        if (!isMounted) {
+          return
+        }
+        setPreferences(storedPreferences)
+        setTaskForm((prev) => ({
+          ...prev,
+          channelEmail: storedPreferences.email,
+          channelPush: storedPreferences.push,
+        }))
+        setAlertForm((prev) => ({
+          ...prev,
+          channelEmail: storedPreferences.email,
+          channelPush: storedPreferences.push,
+        }))
+        setTasks(storedTasks)
+        setAlerts(storedAlerts)
+      } catch {
+        // noop: fallback state already initialized
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const now = useMemo(() => new Date(), [tasks, alerts, preferences])
+
+  const plannedTaskNotifications = useMemo(() => {
+    return tasks
+      .map((task) => {
+        const nextAt = getNextTaskNotificationAt(task, now)
+        if (!nextAt) {
+          return null
+        }
+        return {
+          task,
+          nextAt,
+          channels: resolveNotificationChannels(preferences, {
+            channelEmail: task.channelEmail,
+            channelPush: task.channelPush,
+          }),
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+  }, [tasks, now, preferences])
+
+  const plannedAlertNotifications = useMemo(() => {
+    return alerts
+      .map((alert) => {
+        const nextAt = getNextAlertNotificationAt(alert, now)
+        if (!nextAt) {
+          return null
+        }
+        return {
+          alert,
+          nextAt,
+          channels: resolveNotificationChannels(preferences, {
+            channelEmail: alert.channelEmail,
+            channelPush: alert.channelPush,
+          }),
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+  }, [alerts, now, preferences])
+
+  const plannedNotificationsCount =
+    plannedTaskNotifications.length + plannedAlertNotifications.length
+
+  const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean) => {
+    const nextPreferences = { ...preferences, [key]: value }
+    setPreferences(nextPreferences)
+    setTaskForm((prev) => ({
+      ...prev,
+      channelEmail: key === "email" ? value : prev.channelEmail,
+      channelPush: key === "push" ? value : prev.channelPush,
+    }))
+    setAlertForm((prev) => ({
+      ...prev,
+      channelEmail: key === "email" ? value : prev.channelEmail,
+      channelPush: key === "push" ? value : prev.channelPush,
+    }))
+    void saveNotificationPreferences(nextPreferences)
+  }
 
   const handleTaskSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -114,26 +173,25 @@ export default function AlertsNotifications({ className }: AlertsNotificationsPr
       return
     }
 
-    setTasks((prev) => [
-      {
-        id: `task-${Date.now()}`,
-        title: taskForm.title.trim(),
-        dueDate: taskForm.dueDate,
-        reminder: taskForm.reminder,
-        notes: taskForm.notes.trim(),
-        channelEmail: taskForm.channelEmail,
-        channelPush: taskForm.channelPush,
-        completed: false,
-      },
-      ...prev,
-    ])
+    void createTask({
+      title: taskForm.title.trim(),
+      dueDate: taskForm.dueDate,
+      reminder: taskForm.reminder,
+      notes: taskForm.notes.trim(),
+      channelEmail: taskForm.channelEmail,
+      channelPush: taskForm.channelPush,
+      completed: false,
+      lastNotifiedAt: null,
+    }).then((task) => {
+      setTasks((prev) => [task, ...prev])
+    })
     setTaskForm({
       title: "",
       dueDate: "",
       reminder: reminderOptions[1],
       notes: "",
-      channelEmail: true,
-      channelPush: true,
+      channelEmail: preferences.email,
+      channelPush: preferences.push,
     })
   }
 
@@ -143,32 +201,35 @@ export default function AlertsNotifications({ className }: AlertsNotificationsPr
       return
     }
 
-    setAlerts((prev) => [
-      {
-        id: `alert-${Date.now()}`,
-        title: alertForm.title.trim(),
-        metric: alertForm.metric.trim() || "Personnalisé",
-        threshold: alertForm.threshold.trim() || "Seuil à définir",
-        cadence: alertForm.cadence,
-        channelEmail: alertForm.channelEmail,
-        channelPush: alertForm.channelPush,
-      },
-      ...prev,
-    ])
+    void createAlert({
+      title: alertForm.title.trim(),
+      metric: alertForm.metric.trim() || "Personnalisé",
+      threshold: alertForm.threshold.trim() || "Seuil à définir",
+      cadence: alertForm.cadence,
+      channelEmail: alertForm.channelEmail,
+      channelPush: alertForm.channelPush,
+      lastNotifiedAt: null,
+    }).then((alert) => {
+      setAlerts((prev) => [alert, ...prev])
+    })
     setAlertForm({
       title: "",
       metric: "Allocation",
       threshold: "",
       cadence: cadenceOptions[0],
-      channelEmail: true,
+      channelEmail: preferences.email,
       channelPush: false,
     })
   }
 
   const toggleTask = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task))
-    )
+    const current = tasks.find((task) => task.id === taskId)
+    if (!current) {
+      return
+    }
+    void updateTask(taskId, { completed: !current.completed }).then((updated) => {
+      setTasks((prev) => prev.map((task) => (task.id === taskId ? updated : task)))
+    })
   }
 
   return (
@@ -206,7 +267,9 @@ export default function AlertsNotifications({ className }: AlertsNotificationsPr
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Rappels à venir</p>
-              <p className="text-2xl font-semibold text-foreground">{upcomingReminders.length}</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {isLoading ? "—" : plannedNotificationsCount}
+              </p>
             </div>
             <div className="rounded-full border border-blue-500/30 bg-blue-500/10 p-2 text-blue-500">
               <CalendarClock className="h-5 w-5" />
@@ -236,42 +299,105 @@ export default function AlertsNotifications({ className }: AlertsNotificationsPr
               </div>
             </div>
             <div className="space-y-3">
-              {upcomingReminders.length === 0 ? (
+              {plannedNotificationsCount === 0 ? (
                 <div className="rounded-lg border border-dashed border-border/60 bg-background/40 p-4 text-xs text-muted-foreground">
-                  Ajoutez des tâches avec rappel pour voir les prochaines notifications.
+                  Ajoutez des tâches ou alertes pour voir les prochaines notifications planifiées.
                 </div>
               ) : (
-                upcomingReminders.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/60 p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{task.title}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        Rappel {task.reminder} · Échéance {task.dueDate || "à définir"}
-                      </p>
+                <>
+                  {plannedTaskNotifications.map(({ task, nextAt, channels }) => (
+                    <div
+                      key={task.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/60 p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{task.title}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Prochain rappel {formatNotificationDate(nextAt)} · Échéance{" "}
+                          {task.dueDate || "à définir"}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {channels.email && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Email
+                          </Badge>
+                        )}
+                        {channels.push && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Push
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {task.channelEmail && (
-                        <Badge variant="outline" className="text-[10px]">
-                          Email
-                        </Badge>
-                      )}
-                      {task.channelPush && (
-                        <Badge variant="outline" className="text-[10px]">
-                          Push
-                        </Badge>
-                      )}
+                  ))}
+                  {plannedAlertNotifications.map(({ alert, nextAt, channels }) => (
+                    <div
+                      key={alert.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/60 p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{alert.title}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Prochaine alerte {formatNotificationDate(nextAt)} · {alert.metric} · Seuil{" "}
+                          {alert.threshold}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {channels.email && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Email
+                          </Badge>
+                        )}
+                        {channels.push && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Push
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </>
               )}
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
+          <div className="fx-panel p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Préférences globales</p>
+                <h3 className="text-base font-semibold text-foreground">
+                  Canaux de notification par défaut
+                </h3>
+              </div>
+              <Bell className="h-5 w-5 text-blue-500" />
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={preferences.email}
+                  onCheckedChange={(checked) => handlePreferenceChange("email", checked)}
+                  id="preferences-email"
+                />
+                <Label htmlFor="preferences-email" className="text-xs">
+                  Email
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={preferences.push}
+                  onCheckedChange={(checked) => handlePreferenceChange("push", checked)}
+                  id="preferences-push"
+                />
+                <Label htmlFor="preferences-push" className="text-xs">
+                  Notification push
+                </Label>
+              </div>
+            </div>
+          </div>
+
           <div className="fx-panel p-4">
             <div className="flex items-center justify-between">
               <div>
