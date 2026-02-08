@@ -1,17 +1,120 @@
+"use client"
+
+import { useCallback, useEffect, useState } from "react"
 import Layout from "@/components/kokonutui/layout"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { defaultSettings, loadSettings, saveSettings, type SettingsData } from "@/lib/settings-store"
+
+type SettingsStatus = "idle" | "loading" | "saving" | "saved" | "error"
+
+const statusCopy: Record<SettingsStatus, string> = {
+  idle: "",
+  loading: "Chargement des paramètres...",
+  saving: "Enregistrement en cours...",
+  saved: "Paramètres enregistrés.",
+  error: "Impossible d’enregistrer les paramètres.",
+}
 
 export default function SettingsPage() {
+  const [settings, setSettings] = useState<SettingsData>(defaultSettings)
+  const [status, setStatus] = useState<SettingsStatus>("loading")
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchSettings = async () => {
+      setStatus("loading")
+      setErrorMessage(null)
+      try {
+        const stored = await loadSettings()
+        if (isMounted) {
+          setSettings(stored)
+          setStatus("idle")
+        }
+      } catch (error) {
+        if (isMounted) {
+          setStatus("error")
+          setErrorMessage("Erreur lors du chargement des paramètres.")
+        }
+      }
+    }
+
+    fetchSettings()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const persistSettings = useCallback(async (nextSettings: SettingsData) => {
+    setStatus("saving")
+    setErrorMessage(null)
+
+    try {
+      await saveSettings(nextSettings)
+      setStatus("saved")
+      window.setTimeout(() => {
+        setStatus((currentStatus) => (currentStatus === "saved" ? "idle" : currentStatus))
+      }, 2000)
+    } catch (error) {
+      setStatus("error")
+      setErrorMessage("Une erreur est survenue lors de la sauvegarde.")
+    }
+  }, [])
+
+  const updateSettings = useCallback(
+    (updates: Partial<SettingsData>, shouldPersist = false) => {
+      setSettings((current) => {
+        const nextSettings = {
+          ...current,
+          ...updates,
+          notifications: {
+            ...current.notifications,
+            ...updates.notifications,
+          },
+        }
+
+        if (shouldPersist) {
+          void persistSettings(nextSettings)
+        }
+
+        return nextSettings
+      })
+    },
+    [persistSettings]
+  )
+
+  const handleSaveClick = useCallback(() => {
+    void persistSettings(settings)
+  }, [persistSettings, settings])
+
+  const isLoading = status === "loading"
+
   return (
     <Layout>
       <div className="space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
-          <p className="text-sm text-muted-foreground">
-            Configurez les paramètres essentiels pour sécuriser, personnaliser et synchroniser votre
-            tableau de bord.
-          </p>
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
+            <p className="text-sm text-muted-foreground">
+              Configurez les paramètres essentiels pour sécuriser, personnaliser et synchroniser votre
+              tableau de bord.
+            </p>
+          </div>
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+            <Button onClick={handleSaveClick} disabled={isLoading || status === "saving"}>
+              Enregistrer
+            </Button>
+            <span
+              role={status === "error" ? "alert" : "status"}
+              className={`text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+            >
+              {errorMessage ?? statusCopy[status]}
+            </span>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -25,19 +128,42 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium text-foreground" htmlFor="settings-name">
                   Nom complet
                 </label>
-                <Input id="settings-name" placeholder="Aïcha Diallo" />
+                <Input
+                  id="settings-name"
+                  placeholder="Aïcha Diallo"
+                  value={settings.name}
+                  onChange={(event) => updateSettings({ name: event.target.value })}
+                  onBlur={(event) => persistSettings({ ...settings, name: event.target.value })}
+                  disabled={isLoading}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground" htmlFor="settings-email">
                   Email
                 </label>
-                <Input id="settings-email" type="email" placeholder="aicha@investai.com" />
+                <Input
+                  id="settings-email"
+                  type="email"
+                  placeholder="aicha@investai.com"
+                  value={settings.email}
+                  onChange={(event) => updateSettings({ email: event.target.value })}
+                  onBlur={(event) => persistSettings({ ...settings, email: event.target.value })}
+                  disabled={isLoading}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground" htmlFor="settings-phone">
                   Téléphone
                 </label>
-                <Input id="settings-phone" type="tel" placeholder="+33 6 12 34 56 78" />
+                <Input
+                  id="settings-phone"
+                  type="tel"
+                  placeholder="+33 6 12 34 56 78"
+                  value={settings.phone}
+                  onChange={(event) => updateSettings({ phone: event.target.value })}
+                  onBlur={(event) => persistSettings({ ...settings, phone: event.target.value })}
+                  disabled={isLoading}
+                />
               </div>
             </CardContent>
           </Card>
@@ -52,7 +178,7 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium text-foreground" htmlFor="settings-password">
                   Mot de passe
                 </label>
-                <Input id="settings-password" type="password" placeholder="••••••••" />
+                <Input id="settings-password" type="password" placeholder="••••••••" disabled={isLoading} />
               </div>
               <div className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3">
                 <div>
@@ -66,6 +192,7 @@ export default function SettingsPage() {
                   defaultChecked
                   type="checkbox"
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </div>
               <div className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3">
@@ -80,6 +207,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   defaultChecked
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>
@@ -100,9 +228,21 @@ export default function SettingsPage() {
                 </div>
                 <input
                   aria-label="Activer le résumé hebdomadaire"
-                  defaultChecked
+                  checked={settings.notifications.weeklySummary}
+                  onChange={(event) =>
+                    updateSettings(
+                      {
+                        notifications: {
+                          ...settings.notifications,
+                          weeklySummary: event.target.checked,
+                        },
+                      },
+                      true
+                    )
+                  }
                   type="checkbox"
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </label>
               <label className="flex items-center justify-between gap-4 rounded-lg border border-border/60 p-3">
@@ -115,7 +255,20 @@ export default function SettingsPage() {
                 <input
                   aria-label="Activer les alertes de seuil"
                   type="checkbox"
+                  checked={settings.notifications.thresholdAlerts}
+                  onChange={(event) =>
+                    updateSettings(
+                      {
+                        notifications: {
+                          ...settings.notifications,
+                          thresholdAlerts: event.target.checked,
+                        },
+                      },
+                      true
+                    )
+                  }
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </label>
               <label className="flex items-center justify-between gap-4 rounded-lg border border-border/60 p-3">
@@ -128,8 +281,20 @@ export default function SettingsPage() {
                 <input
                   aria-label="Activer les notifications mobiles"
                   type="checkbox"
-                  defaultChecked
+                  checked={settings.notifications.mobileNotifications}
+                  onChange={(event) =>
+                    updateSettings(
+                      {
+                        notifications: {
+                          ...settings.notifications,
+                          mobileNotifications: event.target.checked,
+                        },
+                      },
+                      true
+                    )
+                  }
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </label>
             </CardContent>
@@ -148,7 +313,9 @@ export default function SettingsPage() {
                 <select
                   id="settings-language"
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  defaultValue="fr"
+                  value={settings.language}
+                  onChange={(event) => updateSettings({ language: event.target.value }, true)}
+                  disabled={isLoading}
                 >
                   <option value="fr">Français</option>
                   <option value="en">English</option>
@@ -162,7 +329,9 @@ export default function SettingsPage() {
                 <select
                   id="settings-currency"
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  defaultValue="eur"
+                  value={settings.currency}
+                  onChange={(event) => updateSettings({ currency: event.target.value }, true)}
+                  disabled={isLoading}
                 >
                   <option value="eur">EUR (€)</option>
                   <option value="usd">USD ($)</option>
@@ -176,7 +345,9 @@ export default function SettingsPage() {
                 <select
                   id="settings-timezone"
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  defaultValue="paris"
+                  value={settings.timezone}
+                  onChange={(event) => updateSettings({ timezone: event.target.value }, true)}
+                  disabled={isLoading}
                 >
                   <option value="paris">Europe/Paris</option>
                   <option value="new-york">America/New_York</option>
@@ -204,6 +375,7 @@ export default function SettingsPage() {
                   defaultChecked
                   type="checkbox"
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </label>
               <label className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3">
@@ -218,6 +390,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   defaultChecked
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isLoading}
                 />
               </label>
             </CardContent>
