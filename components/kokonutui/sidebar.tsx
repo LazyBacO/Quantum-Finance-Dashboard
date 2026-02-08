@@ -16,6 +16,7 @@ import {
   Target,
   Home,
   Plug,
+  Bell,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -146,6 +147,9 @@ export default function Sidebar() {
                   </NavItem>
                   <NavItem href="/dashboard#transactions" icon={CreditCard}>
                     Budgets
+                  </NavItem>
+                  <NavItem href="/planning/alerts-notifications" icon={Bell}>
+                    Alertes &amp; notifications
                   </NavItem>
                   <NavItem href="/dashboard#integrations" icon={Plug}>
                     Intégrations
