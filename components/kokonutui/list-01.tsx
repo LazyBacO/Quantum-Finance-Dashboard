@@ -128,6 +128,7 @@ export default function List01({ className }: List01Props) {
                   "p-2 rounded-lg",
                   "hover:bg-accent/60",
                   "transition-all duration-200",
+                  "hover:-translate-y-0.5 hover:shadow-sm",
                   "cursor-pointer"
                 )}
                 onClick={() => handleEditAccount(account)}

@@ -161,7 +161,7 @@ export default function Sidebar() {
           <div className="flex-1 overflow-y-auto py-4 px-4">
             <div className="space-y-4">
               {sections.map((section) => (
-                <div key={section.id} className="rounded-xl border border-border/40 bg-background/40">
+                <div key={section.id} className="rounded-xl border border-border/40 bg-background/40 dark:bg-slate-900/40 transition-all duration-200 hover:shadow-sm">
                   <button
                     type="button"
                     onClick={() => toggleSection(section.id)}

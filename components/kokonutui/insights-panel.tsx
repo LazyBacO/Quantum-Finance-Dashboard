@@ -79,7 +79,7 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
       </div>
 
       <div className="p-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+        <div className="rounded-xl border border-border/60 bg-background/40 dark:bg-slate-900/40 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             Top dépense
@@ -98,7 +98,7 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
           <p className="text-[10px] text-muted-foreground mt-1">Tendance 7 dernières sorties</p>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+        <div className="rounded-xl border border-border/60 bg-background/40 dark:bg-slate-900/40 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Wallet className="w-3.5 h-3.5 text-emerald-500" />
             Runway estimé
@@ -111,7 +111,7 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+        <div className="rounded-xl border border-border/60 bg-background/40 dark:bg-slate-900/40 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
             Solde net récent
