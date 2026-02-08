@@ -135,7 +135,7 @@ export default function Sidebar() {
 
           <div className="px-4 py-4 border-t border-border/60">
             <div className="space-y-1">
-              <NavItem href="#" icon={Settings}>
+              <NavItem href="/settings" icon={Settings}>
                 Settings
               </NavItem>
               <NavItem href="#" icon={HelpCircle}>
