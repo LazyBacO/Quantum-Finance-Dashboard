@@ -6,7 +6,7 @@ const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const metadata = {
-  title: "KokonutUI Dashboard",
+  title: "OpenNova-Finance",
   description: "A modern dashboard with theme switching",
   generator: "v0.app",
 }
@@ -26,4 +26,3 @@ export default function RootLayout({
     </html>
   )
 }
-

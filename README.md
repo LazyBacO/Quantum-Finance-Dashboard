@@ -1,4 +1,4 @@
-# Quantum Finance Dashboard
+# OpenNova-Finance
 
 Modern financial dashboard with AI-powered insights, portfolio tracking, and a futuristic UI.
 
