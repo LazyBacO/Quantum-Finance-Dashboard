@@ -8,12 +8,10 @@ import {
   Bot,
   TrendingUp,
   PieChart,
-  LineChart,
   PiggyBank,
   ClipboardList,
   RefreshCcw,
   Plug,
-  AlertTriangle,
 } from "lucide-react"
 import List01 from "./list-01"
 import List02 from "./list-02"
@@ -22,20 +20,16 @@ import List04 from "./list-04"
 import AIAdvisor from "./ai-advisor"
 import PerformanceAllocation from "./performance-allocation"
 import Rebalancing from "./rebalancing"
-import NetWorth from "./net-worth"
 import BudgetCashflow from "./budget-cashflow"
 import PlanningScenarios from "./planning-scenarios"
 import Integrations from "./integrations"
-import Alerts from "./alerts"
 import { PortfolioProvider } from "@/lib/portfolio-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Content() {
   const sectionToTab = useMemo(
     () => ({
-      "ai-advisor": "overview",
-      alerts: "overview",
-      "net-worth": "overview",
+      "ai-advisor": "portfolio",
       accounts: "portfolio",
       transactions: "portfolio",
       "performance-allocation": "portfolio",
@@ -49,7 +43,7 @@ export default function Content() {
     []
   )
 
-  const [tabValue, setTabValue] = useState("overview")
+  const [tabValue, setTabValue] = useState("portfolio")
 
   useEffect(() => {
     const syncTabWithHash = () => {
@@ -78,51 +72,28 @@ export default function Content() {
     <PortfolioProvider>
       <Tabs value={tabValue} onValueChange={setTabValue} className="space-y-6">
         <TabsList className="flex h-auto flex-nowrap justify-start gap-2 overflow-x-auto whitespace-nowrap bg-transparent p-0">
-          <TabsTrigger value="overview">Vue d’ensemble</TabsTrigger>
           <TabsTrigger value="portfolio">Portefeuille</TabsTrigger>
           <TabsTrigger value="budget">Budget &amp; Planification</TabsTrigger>
           <TabsTrigger value="integrations">Intégrations</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-8">
+        <TabsContent value="portfolio" className="space-y-8">
           <section id="ai-advisor" className="space-y-3 scroll-mt-24">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                 <Bot className="w-4 h-4 text-primary" />
               </div>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                AI Investment Advisor
-              </h2>
+              <div>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">Agent IA</h2>
+                <p className="text-xs text-muted-foreground">
+                  Pilotez l’application avec un agent qui surveille, explique et orchestre vos
+                  actions.
+                </p>
+              </div>
             </div>
             <AIAdvisor className="w-full" />
           </section>
 
-          <section id="alerts" className="space-y-3 scroll-mt-24">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
-                <AlertTriangle className="w-4 h-4 text-primary" />
-              </div>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                Alertes clés
-              </h2>
-            </div>
-            <Alerts className="w-full" />
-          </section>
-
-          <section id="net-worth" className="space-y-3 scroll-mt-24">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
-                <LineChart className="w-4 h-4 text-primary" />
-              </div>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                Net Worth
-              </h2>
-            </div>
-            <NetWorth className="h-full w-full" />
-          </section>
-        </TabsContent>
-
-        <TabsContent value="portfolio" className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section id="accounts" className="space-y-3 scroll-mt-24">
               <div className="flex items-center gap-3">

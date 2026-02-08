@@ -99,10 +99,9 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
           <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
             <Bot className="w-4 h-4 text-primary" />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">AI Financial Advisor</h2>
-            <p className="text-xs text-muted-foreground">Powered by ChatGPT 5.2</p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Contrôle global, insights instantanés et exécution guidée.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
@@ -137,10 +136,10 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Ask me anything about your finances
+                    Je supervise vos finances et vos opérations
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    I have access to your complete portfolio data
+                    J’ai accès aux données complètes du portefeuille pour tout piloter.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
