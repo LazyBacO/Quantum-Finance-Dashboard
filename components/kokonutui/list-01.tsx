@@ -78,8 +78,9 @@ export default function List01({ className }: List01Props) {
       >
         {/* Total Balance Section */}
         <div className="p-4 border-b border-border/60">
-          <p className="text-xs text-muted-foreground">Total Balance</p>
-          <h1 className="text-2xl font-semibold text-foreground">{totalBalance}</h1>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Balance</p>
+          <h1 className="text-3xl md:text-4xl font-semibold text-foreground leading-tight">{totalBalance}</h1>
+          <p className="text-[11px] text-muted-foreground/80 mt-1">All accounts combined</p>
         </div>
 
         <div className="px-4 py-3 border-b border-border/60">
@@ -179,15 +180,16 @@ export default function List01({ className }: List01Props) {
               type="button"
               onClick={handleAddAccount}
               className={cn(
-                "flex items-center justify-center gap-2",
-                "py-2 px-3 rounded-lg",
-                "text-xs font-medium",
+                "flex items-center justify-center gap-1.5",
+                "py-2 px-2.5 rounded-lg",
+                "text-[11px] font-semibold uppercase tracking-wide",
                 "border border-border/60",
                 "bg-primary text-primary-foreground",
                 "hover:bg-primary/90",
                 "shadow-sm hover:shadow",
                 "transition-all duration-200"
               )}
+              aria-label="Add account"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add</span>
@@ -195,15 +197,16 @@ export default function List01({ className }: List01Props) {
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center gap-2",
-                "py-2 px-3 rounded-lg",
-                "text-xs font-medium",
+                "flex items-center justify-center gap-1.5",
+                "py-2 px-2.5 rounded-lg",
+                "text-[11px] font-semibold uppercase tracking-wide",
                 "border border-border/60",
                 "bg-background/40 text-foreground/80",
                 "hover:bg-accent/60 hover:text-foreground",
                 "shadow-sm hover:shadow",
                 "transition-all duration-200"
               )}
+              aria-label="Send money"
             >
               <SendHorizontal className="w-3.5 h-3.5" />
               <span>Send</span>
@@ -211,15 +214,16 @@ export default function List01({ className }: List01Props) {
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center gap-2",
-                "py-2 px-3 rounded-lg",
-                "text-xs font-medium",
+                "flex items-center justify-center gap-1.5",
+                "py-2 px-2.5 rounded-lg",
+                "text-[11px] font-semibold uppercase tracking-wide",
                 "border border-border/60",
                 "bg-background/40 text-foreground/80",
                 "hover:bg-accent/60 hover:text-foreground",
                 "shadow-sm hover:shadow",
                 "transition-all duration-200"
               )}
+              aria-label="Top up account"
             >
               <ArrowDownLeft className="w-3.5 h-3.5" />
               <span>Top-up</span>
@@ -227,15 +231,16 @@ export default function List01({ className }: List01Props) {
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center gap-2",
-                "py-2 px-3 rounded-lg",
-                "text-xs font-medium",
+                "flex items-center justify-center gap-1.5",
+                "py-2 px-2.5 rounded-lg",
+                "text-[11px] font-semibold uppercase tracking-wide",
                 "border border-border/60",
                 "bg-background/40 text-foreground/80",
                 "hover:bg-accent/60 hover:text-foreground",
                 "shadow-sm hover:shadow",
                 "transition-all duration-200"
               )}
+              aria-label="More actions"
             >
               <ArrowRight className="w-3.5 h-3.5" />
               <span>More</span>

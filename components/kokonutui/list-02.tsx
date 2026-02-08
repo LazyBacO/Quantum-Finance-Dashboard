@@ -45,6 +45,11 @@ export default function List02({ className }: List02Props) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined)
 
+  const formatCategory = (value: string) =>
+    value
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (match) => match.toUpperCase())
+
   const handleAddTransaction = () => {
     setEditingTransaction(undefined)
     setIsModalOpen(true)
@@ -126,13 +131,28 @@ export default function List02({ className }: List02Props) {
                   <div className="flex-1 flex items-center justify-between min-w-0">
                     <div className="space-y-0.5">
                       <h3 className="text-xs font-medium text-foreground">{transaction.title}</h3>
-                      <p className="text-[11px] text-muted-foreground">{transaction.timestamp}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] text-muted-foreground">{transaction.timestamp}</p>
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded-full border",
+                            transaction.type === "incoming"
+                              ? "border-emerald-200/60 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200"
+                              : "border-rose-200/60 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-900/20 dark:text-rose-200"
+                          )}
+                        >
+                          {transaction.type === "incoming" ? "Income" : "Expense"}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-border/60 text-muted-foreground">
+                          {formatCategory(transaction.category)}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 pl-3">
+                    <div className="flex items-center gap-2 pl-3">
                       <span
                         className={cn(
-                          "text-xs font-medium",
+                          "text-xs font-semibold tabular-nums",
                           transaction.type === "incoming"
                             ? "text-emerald-600 dark:text-emerald-400"
                             : "text-red-600 dark:text-red-400"
