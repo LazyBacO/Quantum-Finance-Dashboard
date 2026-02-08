@@ -18,6 +18,7 @@ import List02 from "./list-02"
 import List03 from "./list-03"
 import List04 from "./list-04"
 import AIAdvisor from "./ai-advisor"
+import InsightsPanel from "./insights-panel"
 import PerformanceAllocation from "./performance-allocation"
 import Rebalancing from "./rebalancing"
 import BudgetCashflow from "./budget-cashflow"
@@ -33,6 +34,7 @@ export default function Content() {
       accounts: "portfolio",
       transactions: "portfolio",
       "performance-allocation": "portfolio",
+      insights: "portfolio",
       "stock-actions": "portfolio",
       rebalancing: "portfolio",
       "budget-cashflow": "budget",
@@ -155,6 +157,18 @@ export default function Content() {
               <PerformanceAllocation className="h-full w-full" />
             </section>
           </div>
+
+          <section id="insights" className="space-y-3 scroll-mt-24">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+                <TrendingUp className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Insights & Alerts
+              </h2>
+            </div>
+            <InsightsPanel className="w-full" />
+          </section>
 
           <section id="stock-actions" className="space-y-3 scroll-mt-24">
             <div className="flex items-center gap-3">

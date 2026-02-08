@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import {
   ArrowUpRight,
@@ -44,6 +44,7 @@ export default function List02({ className }: List02Props) {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = usePortfolio()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined)
+  const [filter, setFilter] = useState<"all" | "incoming" | "outgoing">("all")
 
   const formatCategory = (value: string) =>
     value
@@ -74,6 +75,12 @@ export default function List02({ className }: List02Props) {
     }
   }
 
+  const filteredTransactions = useMemo(() => {
+    if (filter === "all") return transactions
+    if (filter === "incoming") return transactions.filter((t) => t.type === "incoming")
+    return transactions.filter((t) => t.type !== "incoming")
+  }, [filter, transactions])
+
   return (
     <>
       <div
@@ -84,24 +91,49 @@ export default function List02({ className }: List02Props) {
         )}
       >
         <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 gap-2">
             <h2 className="text-sm font-semibold text-foreground">
               Recent Activity
               <span className="text-xs font-normal text-muted-foreground ml-1">
-                ({transactions.length} transactions)
+                ({filteredTransactions.length} transactions)
               </span>
             </h2>
-            <button
-              onClick={handleAddTransaction}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-full border border-border/60 bg-background/40 p-0.5">
+                {(
+                  [
+                    { key: "all", label: "All" },
+                    { key: "incoming", label: "Income" },
+                    { key: "outgoing", label: "Expense" },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setFilter(item.key)}
+                    className={cn(
+                      "px-2 py-0.5 text-[10px] font-semibold rounded-full transition",
+                      filter === item.key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleAddTransaction}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add
+              </button>
+            </div>
           </div>
 
           <div className="space-y-1">
-            {transactions.map((transaction) => {
+            {filteredTransactions.map((transaction) => {
               const Icon = categoryIcons[transaction.category] || categoryIcons.default
               return (
                 <div
