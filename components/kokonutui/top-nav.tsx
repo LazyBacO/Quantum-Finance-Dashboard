@@ -41,8 +41,9 @@ export default function TopNav() {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 ml-auto sm:ml-0">
-        <button
-          type="button"
+        <Link
+          href="/planning/alerts-notifications"
+          aria-label="Voir les alertes"
           className="relative p-1.5 sm:p-2 hover:bg-accent/60 rounded-full transition-colors"
         >
           <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
@@ -51,14 +52,15 @@ export default function TopNav() {
               {criticalAlerts}
             </span>
           )}
-        </button>
+        </Link>
 
-        <button
-          type="button"
+        <Link
+          href="/planning/alerts-notifications"
+          aria-label="Voir les notifications"
           className="p-1.5 sm:p-2 hover:bg-accent/60 rounded-full transition-colors"
         >
           <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-        </button>
+        </Link>
 
         <ThemeToggle />
 
