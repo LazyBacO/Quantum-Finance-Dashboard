@@ -78,9 +78,15 @@ const loadJson = <T,>(key: string): { exists: boolean; value: T | null } => {
   try {
     const stored = window.localStorage.getItem(key)
     if (!stored) return { exists: false, value: null }
+    if (stored === "undefined" || stored === "null" || stored.trim() === "") {
+      return { exists: true, value: null }
+    }
     return { exists: true, value: JSON.parse(stored) as T }
   } catch (error) {
-    console.error(`Failed to load ${key} from localStorage:`, error)
+    console.warn(`Failed to load ${key} from localStorage; clearing corrupt value.`)
+    try {
+      window.localStorage.removeItem(key)
+    } catch {}
     return { exists: true, value: null }
   }
 }
@@ -187,20 +193,27 @@ interface PortfolioContextType {
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined)
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
-  const initialState = useMemo(() => loadPortfolioState(), [])
-  const [accounts, setAccounts] = useState<AccountItem[]>(() => initialState?.accounts ?? DEFAULT_ACCOUNTS)
-  const [transactions, setTransactions] = useState<Transaction[]>(() =>
-    initialState?.transactions ?? DEFAULT_TRANSACTIONS
-  )
-  const [goals, setGoals] = useState<FinancialGoal[]>(() => initialState?.goals ?? DEFAULT_GOALS)
-  const [stockActions, setStockActions] = useState<StockAction[]>(() =>
-    initialState?.stockActions ?? DEFAULT_STOCK_ACTIONS
-  )
+  const [accounts, setAccounts] = useState<AccountItem[]>(DEFAULT_ACCOUNTS)
+  const [transactions, setTransactions] = useState<Transaction[]>(DEFAULT_TRANSACTIONS)
+  const [goals, setGoals] = useState<FinancialGoal[]>(DEFAULT_GOALS)
+  const [stockActions, setStockActions] = useState<StockAction[]>(DEFAULT_STOCK_ACTIONS)
 
   // Track last saved time from localStorage
-  const [lastSaved, setLastSaved] = useState<string | null>(() =>
-    initialState?.lastSaved ?? (canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null)
-  )
+  const [lastSaved, setLastSaved] = useState<string | null>(null)
+
+  // Load persisted state on client after mount to avoid hydration mismatch
+  useEffect(() => {
+    const stored = loadPortfolioState()
+    if (stored) {
+      setAccounts(stored.accounts ?? DEFAULT_ACCOUNTS)
+      setTransactions(stored.transactions ?? DEFAULT_TRANSACTIONS)
+      setGoals(stored.goals ?? DEFAULT_GOALS)
+      setStockActions(stored.stockActions ?? DEFAULT_STOCK_ACTIONS)
+      setLastSaved(stored.lastSaved ?? new Date().toISOString())
+      return
+    }
+    setLastSaved(canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null)
+  }, [])
 
   // Auto-save combined state to localStorage whenever any data changes
   useEffect(() => {
