@@ -44,6 +44,7 @@ export default function Content() {
   )
 
   const [tabValue, setTabValue] = useState("portfolio")
+  const [pendingHash, setPendingHash] = useState<string | null>(null)
 
   useEffect(() => {
     const syncTabWithHash = () => {
@@ -54,10 +55,7 @@ export default function Content() {
       const nextTab = sectionToTab[hash as keyof typeof sectionToTab]
       if (nextTab) {
         setTabValue(nextTab)
-        requestAnimationFrame(() => {
-          const target = document.getElementById(hash)
-          target?.scrollIntoView({ behavior: "smooth", block: "start" })
-        })
+        setPendingHash(hash)
       }
     }
 
@@ -67,6 +65,34 @@ export default function Content() {
       window.removeEventListener("hashchange", syncTabWithHash)
     }
   }, [sectionToTab])
+
+  useEffect(() => {
+    if (!pendingHash) {
+      return
+    }
+
+    const scrollToTarget = () => {
+      const target = document.getElementById(pendingHash)
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" })
+        setPendingHash(null)
+        return true
+      }
+      return false
+    }
+
+    if (scrollToTarget()) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      scrollToTarget()
+    }, 100)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [pendingHash, tabValue])
 
   return (
     <PortfolioProvider>
