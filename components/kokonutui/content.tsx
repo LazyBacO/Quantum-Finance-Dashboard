@@ -128,7 +128,10 @@ export default function Content() {
                 <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                   <Wallet className="w-4 h-4 text-primary" />
                 </div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">Accounts</h2>
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Accounts</h2>
+                  <p className="text-xs text-muted-foreground">Aperçu rapide des soldes</p>
+                </div>
               </div>
               <List01 className="h-full w-full" />
             </section>
@@ -138,9 +141,12 @@ export default function Content() {
                 <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                   <CreditCard className="w-4 h-4 text-primary" />
                 </div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                  Recent Transactions
-                </h2>
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                    Recent Transactions
+                  </h2>
+                  <p className="text-xs text-muted-foreground">Flux en temps réel des mouvements</p>
+                </div>
               </div>
               <List02 className="h-full w-full" />
             </section>
@@ -150,9 +156,12 @@ export default function Content() {
                 <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                   <PieChart className="w-4 h-4 text-primary" />
                 </div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                  Performance & Allocation
-                </h2>
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                    Performance & Allocation
+                  </h2>
+                  <p className="text-xs text-muted-foreground">Comparaison vs objectifs</p>
+                </div>
               </div>
               <PerformanceAllocation className="h-full w-full" />
             </section>

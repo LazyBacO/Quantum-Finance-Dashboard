@@ -81,6 +81,7 @@ export default function List01({ className }: List01Props) {
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Balance</p>
           <h1 className="text-3xl md:text-4xl font-semibold text-foreground leading-tight">{totalBalance}</h1>
           <p className="text-[11px] text-muted-foreground/80 mt-1">All accounts combined</p>
+          <p className="text-[10px] uppercase tracking-wide text-emerald-500/90 mt-2">Net +2.4% vs last month</p>
         </div>
 
         <div className="px-4 py-3 border-b border-border/60">

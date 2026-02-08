@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { useMemo } from "react"
-import { AlertTriangle, Sparkles, Wallet } from "lucide-react"
+import { AlertTriangle, Sparkles, Wallet, TrendingUp } from "lucide-react"
 import { usePortfolio } from "@/lib/portfolio-context"
 
 interface InsightsPanelProps {
@@ -36,6 +36,12 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
     const totalOutgoing = outgoing.reduce((sum, t) => sum + parseMoney(t.amount), 0)
     const totalIncoming = incoming.reduce((sum, t) => sum + parseMoney(t.amount), 0)
 
+    const trendSeries = outgoing
+      .slice(0, 7)
+      .map((t) => parseMoney(t.amount))
+      .reverse()
+    const trendMax = Math.max(1, ...trendSeries)
+
     const liquid = accounts
       .filter((a) => a.type === "savings" || a.type === "checking")
       .reduce((sum, a) => sum + parseMoney(a.balance), 0)
@@ -53,6 +59,8 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
       liquid,
       cashDelta: totalIncoming - totalOutgoing,
       debt,
+      trendSeries,
+      trendMax,
     }
   }, [accounts, transactions])
 
@@ -78,6 +86,16 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
           </div>
           <p className="text-sm font-semibold text-foreground mt-2">{insights.topExpense.title}</p>
           <p className="text-xs text-rose-500">-{formatCurrency(insights.topExpense.amount)}</p>
+          <div className="mt-3 flex items-end gap-1 h-8">
+            {insights.trendSeries.map((value, index) => (
+              <span
+                key={`${value}-${index}`}
+                className="flex-1 rounded-sm bg-rose-500/60"
+                style={{ height: `${Math.max(12, (value / insights.trendMax) * 100)}%` }}
+              />
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">Tendance 7 dernières sorties</p>
         </div>
 
         <div className="rounded-xl border border-border/60 bg-background/40 p-3">
@@ -87,6 +105,10 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
           </div>
           <p className="text-sm font-semibold text-foreground mt-2">{insights.runwayMonths} mois</p>
           <p className="text-xs text-muted-foreground">Liquidité: {formatCurrency(insights.liquid)}</p>
+          <div className="mt-2 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border border-emerald-200/60 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200">
+            <TrendingUp className="w-3 h-3" />
+            Projection stable
+          </div>
         </div>
 
         <div className="rounded-xl border border-border/60 bg-background/40 p-3">
@@ -106,6 +128,16 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
             {formatCurrency(Math.abs(insights.cashDelta))}
           </p>
           <p className="text-xs text-muted-foreground">Dette totale: {formatCurrency(insights.debt)}</p>
+          <div
+            className={cn(
+              "mt-2 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border",
+              insights.cashDelta >= 0
+                ? "border-emerald-200/60 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200"
+                : "border-rose-200/60 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-900/20 dark:text-rose-200"
+            )}
+          >
+            {insights.cashDelta >= 0 ? "Excédent positif" : "Tension de cashflow"}
+          </div>
         </div>
       </div>
     </div>
