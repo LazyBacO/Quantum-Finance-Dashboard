@@ -135,10 +135,10 @@ export default function Sidebar() {
     <>
       <button
         type="button"
-        className="lg:hidden fixed top-4 left-4 z-[70] p-2 rounded-xl bg-background/60 backdrop-blur-xl border border-border/60 shadow-sm"
+        className="group lg:hidden fixed top-4 left-4 z-[70] p-2 rounded-xl bg-background/60 backdrop-blur-xl border border-border/60 shadow-sm transition-all duration-200 hover:shadow-md"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       >
-        <Menu className="h-5 w-5 text-foreground/70" />
+        <Menu className="h-5 w-5 text-foreground/70 transition-transform duration-200 group-hover:scale-105" />
       </button>
       <nav
         className={`

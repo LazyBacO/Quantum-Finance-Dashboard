@@ -144,6 +144,8 @@ export default function List02({ className }: List02Props) {
                     "hover:bg-accent/60",
                     "transition-all duration-200",
                     "hover:-translate-y-0.5 hover:shadow-sm",
+                    "active:translate-y-0",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     "cursor-pointer"
                   )}
                   onClick={() => handleEditTransaction(transaction)}
