@@ -15,7 +15,7 @@ interface BreadcrumbItem {
 
 export default function TopNav() {
   const breadcrumbs: BreadcrumbItem[] = [
-    { label: "InvestAI", href: "#" },
+    { label: "Quantum Finance Dashboard", href: "#" },
     { label: "Dashboard", href: "#" },
   ]
   const criticalAlerts = ALERTS.filter((alert) => alert.status === "critique").length
