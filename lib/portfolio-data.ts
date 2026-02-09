@@ -162,6 +162,7 @@ const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   year: "numeric",
+  timeZone: "UTC",
 })
 
 const SHORT_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -180,6 +181,7 @@ const SHORT_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
 const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "numeric",
+  timeZone: "UTC",
 })
 
 export const centsToDollars = (valueCents: number) => valueCents / 100

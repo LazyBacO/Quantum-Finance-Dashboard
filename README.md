@@ -39,6 +39,7 @@ If `NOTIFICATION_CRON_SECRET` is set, `/api/notification-cron` requires either `
 - `pnpm start` — run production server
 - `pnpm typecheck` — TypeScript validation (`tsc --noEmit`)
 - `pnpm lint` — ESLint checks
+- `pnpm test` — unit tests (Vitest)
 
 ## Notes
 - Auto-save uses localStorage (client-only).
