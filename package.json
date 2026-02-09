@@ -1,7 +1,12 @@
 {
-  "name": "my-v0-project",
+  "name": "open-nova-finance",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LazyBacO/OpenNova-Finance.git"
+  },
+  "homepage": "https://github.com/LazyBacO/OpenNova-Finance",
   "scripts": {
     "build": "next build",
     "dev": "next dev",

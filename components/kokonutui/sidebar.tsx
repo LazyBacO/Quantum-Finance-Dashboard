@@ -154,7 +154,7 @@ export default function Sidebar() {
               <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-lg font-semibold tracking-tight fx-brand">InvestAI</span>
+              <span className="text-lg font-semibold tracking-tight fx-brand">OpenNova-Finance</span>
             </div>
           </div>
 
