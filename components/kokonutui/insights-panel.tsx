@@ -4,18 +4,11 @@ import { cn } from "@/lib/utils"
 import { useMemo } from "react"
 import { AlertTriangle, Sparkles, Wallet, TrendingUp } from "lucide-react"
 import { usePortfolio } from "@/lib/portfolio-context"
+import { centsToDollars, formatCurrencyFromCents } from "@/lib/portfolio-data"
 
 interface InsightsPanelProps {
   className?: string
 }
-
-const parseMoney = (value: string) => {
-  const numeric = parseFloat(value.replace(/[^0-9.-]/g, ""))
-  return Number.isFinite(numeric) ? numeric : 0
-}
-
-const formatCurrency = (value: number) =>
-  `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export default function InsightsPanel({ className }: InsightsPanelProps) {
   const { transactions, accounts } = usePortfolio()
@@ -26,39 +19,38 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
 
     const topExpense = outgoing.reduce(
       (acc, t) => {
-        const amount = parseMoney(t.amount)
-        if (amount > acc.amount) return { title: t.title, amount }
+        if (t.amountCents > acc.amountCents) return { title: t.title, amountCents: t.amountCents }
         return acc
       },
-      { title: "Aucune dépense", amount: 0 }
+      { title: "Aucune dépense", amountCents: 0 }
     )
 
-    const totalOutgoing = outgoing.reduce((sum, t) => sum + parseMoney(t.amount), 0)
-    const totalIncoming = incoming.reduce((sum, t) => sum + parseMoney(t.amount), 0)
+    const totalOutgoingCents = outgoing.reduce((sum, t) => sum + t.amountCents, 0)
+    const totalIncomingCents = incoming.reduce((sum, t) => sum + t.amountCents, 0)
 
     const trendSeries = outgoing
       .slice(0, 7)
-      .map((t) => parseMoney(t.amount))
+      .map((t) => centsToDollars(t.amountCents))
       .reverse()
     const trendMax = Math.max(1, ...trendSeries)
 
-    const liquid = accounts
+    const liquidCents = accounts
       .filter((a) => a.type === "savings" || a.type === "checking")
-      .reduce((sum, a) => sum + parseMoney(a.balance), 0)
+      .reduce((sum, a) => sum + a.balanceCents, 0)
 
-    const monthlyBurn = totalOutgoing || 1
-    const runwayMonths = Math.max(0.5, Math.round((liquid / monthlyBurn) * 10) / 10)
+    const monthlyBurnCents = totalOutgoingCents || 1
+    const runwayMonths = Math.max(0.5, Math.round((liquidCents / monthlyBurnCents) * 10) / 10)
 
-    const debt = accounts
+    const debtCents = accounts
       .filter((a) => a.type === "debt")
-      .reduce((sum, a) => sum + parseMoney(a.balance), 0)
+      .reduce((sum, a) => sum + a.balanceCents, 0)
 
     return {
       topExpense,
       runwayMonths,
-      liquid,
-      cashDelta: totalIncoming - totalOutgoing,
-      debt,
+      liquidCents,
+      cashDeltaCents: totalIncomingCents - totalOutgoingCents,
+      debtCents,
       trendSeries,
       trendMax,
     }
@@ -85,7 +77,9 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
             Top dépense
           </div>
           <p className="text-sm font-semibold text-foreground mt-2">{insights.topExpense.title}</p>
-          <p className="text-xs text-rose-500">-{formatCurrency(insights.topExpense.amount)}</p>
+          <p className="text-xs text-rose-500">
+            -{formatCurrencyFromCents(insights.topExpense.amountCents)}
+          </p>
           <div className="mt-3 flex items-end gap-1 h-8">
             {insights.trendSeries.map((value, index) => (
               <span
@@ -104,7 +98,9 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
             Runway estimé
           </div>
           <p className="text-sm font-semibold text-foreground mt-2">{insights.runwayMonths} mois</p>
-          <p className="text-xs text-muted-foreground">Liquidité: {formatCurrency(insights.liquid)}</p>
+          <p className="text-xs text-muted-foreground">
+            Liquidité: {formatCurrencyFromCents(insights.liquidCents)}
+          </p>
           <div className="mt-2 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border border-emerald-200/60 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200">
             <TrendingUp className="w-3 h-3" />
             Projection stable
@@ -119,24 +115,26 @@ export default function InsightsPanel({ className }: InsightsPanelProps) {
           <p
             className={cn(
               "text-sm font-semibold mt-2",
-              insights.cashDelta >= 0
+              insights.cashDeltaCents >= 0
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-rose-600 dark:text-rose-400"
             )}
           >
-            {insights.cashDelta >= 0 ? "+" : "-"}
-            {formatCurrency(Math.abs(insights.cashDelta))}
+            {insights.cashDeltaCents >= 0 ? "+" : "-"}
+            {formatCurrencyFromCents(Math.abs(insights.cashDeltaCents))}
           </p>
-          <p className="text-xs text-muted-foreground">Dette totale: {formatCurrency(insights.debt)}</p>
+          <p className="text-xs text-muted-foreground">
+            Dette totale: {formatCurrencyFromCents(insights.debtCents)}
+          </p>
           <div
             className={cn(
               "mt-2 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border",
-              insights.cashDelta >= 0
+              insights.cashDeltaCents >= 0
                 ? "border-emerald-200/60 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200"
                 : "border-rose-200/60 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-900/20 dark:text-rose-200"
             )}
           >
-            {insights.cashDelta >= 0 ? "Excédent positif" : "Tension de cashflow"}
+            {insights.cashDeltaCents >= 0 ? "Excédent positif" : "Tension de cashflow"}
           </div>
         </div>
       </div>

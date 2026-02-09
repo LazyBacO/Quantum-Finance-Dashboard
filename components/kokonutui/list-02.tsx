@@ -20,7 +20,11 @@ import {
 import type { LucideIcon } from "lucide-react"
 import { usePortfolio } from "@/lib/portfolio-context"
 import { TransactionModal } from "./portfolio-modals"
-import type { Transaction } from "@/lib/portfolio-data"
+import {
+  formatCurrencyFromCents,
+  formatRelativeTimestampFromIso,
+  type Transaction,
+} from "@/lib/portfolio-data"
 
 interface List02Props {
   className?: string
@@ -167,7 +171,9 @@ export default function List02({ className }: List02Props) {
                     <div className="space-y-0.5">
                       <h3 className="text-xs font-medium text-foreground">{transaction.title}</h3>
                       <div className="flex items-center gap-2">
-                        <p className="text-[11px] text-muted-foreground">{transaction.timestamp}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {formatRelativeTimestampFromIso(transaction.timestampIso)}
+                        </p>
                         <span
                           className={cn(
                             "text-[10px] px-1.5 py-0.5 rounded-full border",
@@ -194,7 +200,7 @@ export default function List02({ className }: List02Props) {
                         )}
                       >
                         {transaction.type === "incoming" ? "+" : "-"}
-                        {transaction.amount}
+                        {formatCurrencyFromCents(transaction.amountCents)}
                       </span>
                       {transaction.type === "incoming" ? (
                         <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />

@@ -4,17 +4,17 @@ export interface AccountItem {
   id: string
   title: string
   description?: string
-  balance: string
+  balanceCents: number
   type: "savings" | "checking" | "investment" | "debt"
 }
 
 export interface Transaction {
   id: string
   title: string
-  amount: string
+  amountCents: number
   type: "incoming" | "outgoing"
   category: string
-  timestamp: string
+  timestampIso: string
   status: "completed" | "pending" | "failed"
 }
 
@@ -23,8 +23,8 @@ export interface FinancialGoal {
   title: string
   subtitle: string
   iconStyle: string
-  date: string
-  amount?: string
+  targetDateIso: string
+  targetAmountCents?: number
   status: "pending" | "in-progress" | "completed"
   progress?: number
 }
@@ -34,8 +34,8 @@ export interface StockAction {
   symbol: string
   action: "buy" | "sell"
   shares: number
-  price: string
-  tradeDate: string
+  priceCents: number
+  tradeDateIso: string
   status: "executed" | "pending" | "cancelled"
 }
 
@@ -151,40 +151,138 @@ export interface PlanningScenario {
   incomeDelta: number
 }
 
+const USD_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+})
+
+const SHORT_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+})
+
+const SHORT_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+})
+
+const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+})
+
+export const centsToDollars = (valueCents: number) => valueCents / 100
+export const dollarsToCents = (valueDollars: number) => Math.round(valueDollars * 100)
+
+export const parseCurrencyToCents = (value: string | number | null | undefined): number => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? dollarsToCents(value) : 0
+  }
+
+  if (typeof value !== "string" || value.trim() === "") {
+    return 0
+  }
+
+  const normalized = Number.parseFloat(value.replace(/[^0-9.-]/g, ""))
+  if (!Number.isFinite(normalized)) {
+    return 0
+  }
+  return dollarsToCents(normalized)
+}
+
+export const formatCurrencyFromCents = (valueCents: number) => USD_FORMATTER.format(centsToDollars(valueCents))
+
+export const formatShortDateFromIso = (valueIso: string) => {
+  const parsed = new Date(valueIso)
+  if (Number.isNaN(parsed.getTime())) {
+    return valueIso
+  }
+  return SHORT_DATE_FORMATTER.format(parsed)
+}
+
+export const formatShortDateTimeFromIso = (valueIso: string) => {
+  const parsed = new Date(valueIso)
+  if (Number.isNaN(parsed.getTime())) {
+    return valueIso
+  }
+  return SHORT_DATE_TIME_FORMATTER.format(parsed)
+}
+
+export const formatMonthYearFromIso = (valueIso: string) => {
+  const parsed = new Date(valueIso)
+  if (Number.isNaN(parsed.getTime())) {
+    return valueIso
+  }
+  return MONTH_YEAR_FORMATTER.format(parsed)
+}
+
+export const formatRelativeTimestampFromIso = (valueIso: string) => {
+  const parsed = new Date(valueIso)
+  if (Number.isNaN(parsed.getTime())) {
+    return valueIso
+  }
+
+  const now = new Date()
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  const comparedDate = new Date(parsed)
+  comparedDate.setHours(0, 0, 0, 0)
+
+  const dayDifference = Math.round((today.getTime() - comparedDate.getTime()) / 86_400_000)
+  if (dayDifference === 0) {
+    return `Today, ${SHORT_TIME_FORMATTER.format(parsed)}`
+  }
+  if (dayDifference === 1) {
+    return `Yesterday, ${SHORT_TIME_FORMATTER.format(parsed)}`
+  }
+  return SHORT_DATE_TIME_FORMATTER.format(parsed)
+}
+
 export const ACCOUNTS: AccountItem[] = [
   {
     id: "1",
     title: "Main Savings",
     description: "Personal savings",
-    balance: "$8,459.45",
+    balanceCents: 845_945,
     type: "savings",
   },
   {
     id: "2",
     title: "Checking Account",
     description: "Daily expenses",
-    balance: "$2,850.00",
+    balanceCents: 285_000,
     type: "checking",
   },
   {
     id: "3",
     title: "Investment Portfolio",
     description: "Stock & ETFs",
-    balance: "$15,230.80",
+    balanceCents: 1_523_080,
     type: "investment",
   },
   {
     id: "4",
     title: "Credit Card",
     description: "Pending charges",
-    balance: "$1,200.00",
+    balanceCents: 120_000,
     type: "debt",
   },
   {
     id: "5",
     title: "Savings Account",
     description: "Emergency fund",
-    balance: "$3,000.00",
+    balanceCents: 300_000,
     type: "savings",
   },
 ]
@@ -193,55 +291,55 @@ export const TRANSACTIONS: Transaction[] = [
   {
     id: "1",
     title: "Dividend Payment - AAPL",
-    amount: "$125.50",
+    amountCents: 12_550,
     type: "incoming",
     category: "investment",
-    timestamp: "Today, 2:45 PM",
+    timestampIso: "2026-03-03T14:45:00.000Z",
     status: "completed",
   },
   {
     id: "2",
     title: "Salary Deposit",
-    amount: "$4,500.00",
+    amountCents: 450_000,
     type: "incoming",
     category: "income",
-    timestamp: "Today, 9:00 AM",
+    timestampIso: "2026-03-03T09:00:00.000Z",
     status: "completed",
   },
   {
     id: "3",
     title: "Stock Purchase - NVDA",
-    amount: "$850.00",
+    amountCents: 85_000,
     type: "outgoing",
     category: "investment",
-    timestamp: "Yesterday, 3:30 PM",
+    timestampIso: "2026-03-02T15:30:00.000Z",
     status: "completed",
   },
   {
     id: "4",
     title: "Amazon Purchase",
-    amount: "$156.99",
+    amountCents: 15_699,
     type: "outgoing",
     category: "shopping",
-    timestamp: "Yesterday, 11:20 AM",
+    timestampIso: "2026-03-02T11:20:00.000Z",
     status: "completed",
   },
   {
     id: "5",
     title: "Electric Bill",
-    amount: "$142.50",
+    amountCents: 14_250,
     type: "outgoing",
     category: "utilities",
-    timestamp: "Feb 2, 2026",
+    timestampIso: "2026-02-02T08:00:00.000Z",
     status: "completed",
   },
   {
     id: "6",
     title: "Credit Card Payment",
-    amount: "$500.00",
+    amountCents: 50_000,
     type: "outgoing",
     category: "debt",
-    timestamp: "Feb 1, 2026",
+    timestampIso: "2026-02-01T08:00:00.000Z",
     status: "completed",
   },
 ]
@@ -252,8 +350,8 @@ export const FINANCIAL_GOALS: FinancialGoal[] = [
     title: "Emergency Fund",
     subtitle: "3 months of expenses saved",
     iconStyle: "savings",
-    date: "Target: Dec 2026",
-    amount: "$15,000",
+    targetDateIso: "2026-12-01T00:00:00.000Z",
+    targetAmountCents: 1_500_000,
     status: "in-progress",
     progress: 65,
   },
@@ -262,8 +360,8 @@ export const FINANCIAL_GOALS: FinancialGoal[] = [
     title: "Stock Portfolio",
     subtitle: "Tech sector investment plan",
     iconStyle: "investment",
-    date: "Target: Jun 2026",
-    amount: "$50,000",
+    targetDateIso: "2026-06-01T00:00:00.000Z",
+    targetAmountCents: 5_000_000,
     status: "pending",
     progress: 30,
   },
@@ -272,8 +370,8 @@ export const FINANCIAL_GOALS: FinancialGoal[] = [
     title: "Debt Repayment",
     subtitle: "Credit card payoff plan",
     iconStyle: "debt",
-    date: "Target: Mar 2027",
-    amount: "$25,000",
+    targetDateIso: "2027-03-01T00:00:00.000Z",
+    targetAmountCents: 2_500_000,
     status: "in-progress",
     progress: 45,
   },
@@ -285,8 +383,8 @@ export const STOCK_ACTIONS: StockAction[] = [
     symbol: "AAPL",
     action: "buy",
     shares: 12,
-    price: "$182.45",
-    tradeDate: "Mar 2, 2026",
+    priceCents: 18_245,
+    tradeDateIso: "2026-03-02T00:00:00.000Z",
     status: "executed",
   },
   {
@@ -294,8 +392,8 @@ export const STOCK_ACTIONS: StockAction[] = [
     symbol: "TSLA",
     action: "sell",
     shares: 6,
-    price: "$236.10",
-    tradeDate: "Feb 28, 2026",
+    priceCents: 23_610,
+    tradeDateIso: "2026-02-28T00:00:00.000Z",
     status: "pending",
   },
   {
@@ -303,8 +401,8 @@ export const STOCK_ACTIONS: StockAction[] = [
     symbol: "MSFT",
     action: "buy",
     shares: 4,
-    price: "$413.22",
-    tradeDate: "Feb 25, 2026",
+    priceCents: 41_322,
+    tradeDateIso: "2026-02-25T00:00:00.000Z",
     status: "executed",
   },
 ]
@@ -680,27 +778,53 @@ export const PLANNING_SCENARIOS: PlanningScenario[] = [
   },
 ]
 
-export const TOTAL_BALANCE = "$26,540.25"
+export const TOTAL_BALANCE_CENTS = ACCOUNTS.reduce((sum, account) => {
+  if (account.type === "debt") {
+    return sum - account.balanceCents
+  }
+  return sum + account.balanceCents
+}, 0)
+
+export const TOTAL_BALANCE = formatCurrencyFromCents(TOTAL_BALANCE_CENTS)
 
 // Helper function to get portfolio summary for AI
 export function getPortfolioSummary() {
-  const totalSavings = ACCOUNTS.filter(a => a.type === "savings")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
-  
-  const totalInvestments = ACCOUNTS.filter(a => a.type === "investment")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
-  
-  const totalDebt = ACCOUNTS.filter(a => a.type === "debt")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
-  
-  const totalChecking = ACCOUNTS.filter(a => a.type === "checking")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
+  const totalSavingsCents = ACCOUNTS.filter((a) => a.type === "savings").reduce(
+    (sum, a) => sum + a.balanceCents,
+    0
+  )
 
-  const recentIncome = TRANSACTIONS.filter(t => t.type === "incoming")
-    .reduce((sum, t) => sum + parseFloat(t.amount.replace(/[$,]/g, "")), 0)
-  
-  const recentExpenses = TRANSACTIONS.filter(t => t.type === "outgoing")
-    .reduce((sum, t) => sum + parseFloat(t.amount.replace(/[$,]/g, "")), 0)
+  const totalInvestmentsCents = ACCOUNTS.filter((a) => a.type === "investment").reduce(
+    (sum, a) => sum + a.balanceCents,
+    0
+  )
+
+  const totalDebtCents = ACCOUNTS.filter((a) => a.type === "debt").reduce(
+    (sum, a) => sum + a.balanceCents,
+    0
+  )
+
+  const totalCheckingCents = ACCOUNTS.filter((a) => a.type === "checking").reduce(
+    (sum, a) => sum + a.balanceCents,
+    0
+  )
+
+  const recentIncomeCents = TRANSACTIONS.filter((t) => t.type === "incoming").reduce(
+    (sum, t) => sum + t.amountCents,
+    0
+  )
+
+  const recentExpensesCents = TRANSACTIONS.filter((t) => t.type === "outgoing").reduce(
+    (sum, t) => sum + t.amountCents,
+    0
+  )
+
+  const totalSavings = centsToDollars(totalSavingsCents)
+  const totalInvestments = centsToDollars(totalInvestmentsCents)
+  const totalDebt = centsToDollars(totalDebtCents)
+  const totalChecking = centsToDollars(totalCheckingCents)
+  const recentIncome = centsToDollars(recentIncomeCents)
+  const recentExpenses = centsToDollars(recentExpensesCents)
 
   return {
     totalBalance: TOTAL_BALANCE,

@@ -19,6 +19,9 @@ import {
   STOCK_ACTIONS as DEFAULT_STOCK_ACTIONS,
   ALERTS_THRESHOLDS as DEFAULT_ALERTS_THRESHOLDS,
   PLANNING_SCENARIOS as DEFAULT_PLANNING_SCENARIOS,
+  dollarsToCents,
+  formatCurrencyFromCents,
+  parseCurrencyToCents,
   type AllocationActual,
   type AllocationTarget,
   type NetWorthBreakdownItem,
@@ -37,10 +40,11 @@ import {
   type DiversificationBreakdown,
 } from "./portfolio-data"
 
-// LocalStorage keys for persistence
 const STORAGE_KEYS = {
-  STATE: "portfolio_state_v1",
-  BACKUP: "portfolio_state_backup_v1",
+  STATE: "portfolio_state_v2",
+  BACKUP: "portfolio_state_backup_v2",
+  PREVIOUS_STATE: "portfolio_state_v1",
+  PREVIOUS_BACKUP: "portfolio_state_backup_v1",
   LEGACY_ACCOUNTS: "portfolio_accounts",
   LEGACY_TRANSACTIONS: "portfolio_transactions",
   LEGACY_GOALS: "portfolio_goals",
@@ -51,8 +55,8 @@ const STORAGE_KEYS = {
 const canUseStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined"
 
-type PortfolioState = {
-  version: 1
+type PortfolioStateV2 = {
+  version: 2
   accounts: AccountItem[]
   transactions: Transaction[]
   goals: FinancialGoal[]
@@ -60,9 +64,38 @@ type PortfolioState = {
   lastSaved: string
 }
 
-const isPortfolioState = (value: unknown): value is PortfolioState => {
+type PortfolioStateV1 = {
+  version: 1
+  accounts: unknown[]
+  transactions: unknown[]
+  goals: unknown[]
+  stockActions: unknown[]
+  lastSaved: string
+}
+
+const ACCOUNT_TYPES = ["savings", "checking", "investment", "debt"] as const
+const TRANSACTION_TYPES = ["incoming", "outgoing"] as const
+const TRANSACTION_STATUSES = ["completed", "pending", "failed"] as const
+const GOAL_STATUSES = ["pending", "in-progress", "completed"] as const
+const STOCK_ACTION_TYPES = ["buy", "sell"] as const
+const STOCK_ACTION_STATUSES = ["executed", "pending", "cancelled"] as const
+
+const isPortfolioStateV2 = (value: unknown): value is PortfolioStateV2 => {
   if (!value || typeof value !== "object") return false
-  const data = value as PortfolioState
+  const data = value as PortfolioStateV2
+  return (
+    data.version === 2 &&
+    Array.isArray(data.accounts) &&
+    Array.isArray(data.transactions) &&
+    Array.isArray(data.goals) &&
+    Array.isArray(data.stockActions) &&
+    typeof data.lastSaved === "string"
+  )
+}
+
+const isPortfolioStateV1 = (value: unknown): value is PortfolioStateV1 => {
+  if (!value || typeof value !== "object") return false
+  const data = value as PortfolioStateV1
   return (
     data.version === 1 &&
     Array.isArray(data.accounts) &&
@@ -91,7 +124,7 @@ const loadJson = <T,>(key: string): { exists: boolean; value: T | null } => {
   }
 }
 
-const savePortfolioState = (state: PortfolioState) => {
+const savePortfolioState = (state: PortfolioStateV2) => {
   if (!canUseStorage()) return
   try {
     const previous = window.localStorage.getItem(STORAGE_KEYS.STATE)
@@ -105,21 +138,289 @@ const savePortfolioState = (state: PortfolioState) => {
   }
 }
 
-const loadPortfolioState = () => {
-  const stored = loadJson<PortfolioState>(STORAGE_KEYS.STATE)
-  if (stored.exists && stored.value && isPortfolioState(stored.value)) {
+const asString = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim().length > 0 ? value : undefined
+
+const asLiteral = <T extends readonly string[]>(
+  value: unknown,
+  allowed: T,
+  fallback: T[number]
+): T[number] => {
+  if (typeof value !== "string") return fallback
+  return (allowed as readonly string[]).includes(value) ? (value as T[number]) : fallback
+}
+
+const asFiniteNumber = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isFinite(value) ? value : undefined
+
+const createGeneratedId = (prefix: string, index: number) =>
+  `${prefix}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`
+
+const parseLegacyRelativeDateTime = (value: string): string | null => {
+  const match = value.match(/^(today|yesterday),\s*(\d{1,2}):(\d{2})\s*(am|pm)$/i)
+  if (!match) return null
+
+  const [, dayLabel, rawHour, rawMinute, meridiem] = match
+  const hour = Number.parseInt(rawHour, 10)
+  const minute = Number.parseInt(rawMinute, 10)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null
+
+  const date = new Date()
+  if (dayLabel.toLowerCase() === "yesterday") {
+    date.setDate(date.getDate() - 1)
+  }
+
+  let normalizedHour = hour % 12
+  if (meridiem.toLowerCase() === "pm") {
+    normalizedHour += 12
+  }
+
+  date.setHours(normalizedHour, minute, 0, 0)
+  return date.toISOString()
+}
+
+const parseMonthYearToIso = (value: string): string | null => {
+  const cleaned = value.replace(/^Target:\s*/i, "").trim()
+  const match = cleaned.match(/^([A-Za-z]{3,9})\s+(\d{4})$/)
+  if (!match) return null
+
+  const [, monthRaw, yearRaw] = match
+  const year = Number.parseInt(yearRaw, 10)
+  const monthDate = new Date(`${monthRaw} 1, ${yearRaw}`)
+  if (!Number.isFinite(year) || Number.isNaN(monthDate.getTime())) return null
+
+  const utcDate = new Date(Date.UTC(year, monthDate.getUTCMonth(), 1, 0, 0, 0))
+  return utcDate.toISOString()
+}
+
+const parseDateToIso = (value: unknown, fallbackIso: string): string => {
+  if (typeof value !== "string" || value.trim() === "") {
+    return fallbackIso
+  }
+
+  const relative = parseLegacyRelativeDateTime(value.trim())
+  if (relative) {
+    return relative
+  }
+
+  const monthYear = parseMonthYearToIso(value)
+  if (monthYear) {
+    return monthYear
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return fallbackIso
+  }
+  return parsed.toISOString()
+}
+
+const normalizeAccounts = (raw: unknown): AccountItem[] | null => {
+  if (!Array.isArray(raw)) return null
+  return raw.map((entry, index) => {
+    const fallback = DEFAULT_ACCOUNTS[index] ?? DEFAULT_ACCOUNTS[0]
+    if (!entry || typeof entry !== "object") {
+      return { ...fallback, id: createGeneratedId("account", index) }
+    }
+
+    const account = entry as Partial<
+      AccountItem & {
+        balance?: string
+      }
+    >
+
+    const normalizedBalanceCents = asFiniteNumber(account.balanceCents)
+    const hasBalanceCents = normalizedBalanceCents !== undefined
+    const hasLegacyBalance = typeof account.balance === "string"
+    const balanceCents = hasBalanceCents
+      ? Math.round(normalizedBalanceCents)
+      : hasLegacyBalance
+        ? parseCurrencyToCents(account.balance)
+        : fallback.balanceCents
+
+    return {
+      id: asString(account.id) ?? createGeneratedId("account", index),
+      title: asString(account.title) ?? fallback.title,
+      description: typeof account.description === "string" ? account.description : fallback.description,
+      balanceCents,
+      type: asLiteral(account.type, ACCOUNT_TYPES, fallback.type),
+    }
+  })
+}
+
+const normalizeTransactions = (raw: unknown): Transaction[] | null => {
+  if (!Array.isArray(raw)) return null
+  return raw.map((entry, index) => {
+    const fallback = DEFAULT_TRANSACTIONS[index] ?? DEFAULT_TRANSACTIONS[0]
+    if (!entry || typeof entry !== "object") {
+      return { ...fallback, id: createGeneratedId("transaction", index) }
+    }
+
+    const transaction = entry as Partial<
+      Transaction & {
+        amount?: string
+        timestamp?: string
+      }
+    >
+
+    const normalizedAmountCents = asFiniteNumber(transaction.amountCents)
+    const hasAmountCents = normalizedAmountCents !== undefined
+    const hasLegacyAmount = typeof transaction.amount === "string"
+    const amountCents = hasAmountCents
+      ? Math.round(normalizedAmountCents)
+      : hasLegacyAmount
+        ? parseCurrencyToCents(transaction.amount)
+        : fallback.amountCents
+
+    const timestampIso = parseDateToIso(
+      transaction.timestampIso ?? transaction.timestamp,
+      fallback.timestampIso
+    )
+
+    return {
+      id: asString(transaction.id) ?? createGeneratedId("transaction", index),
+      title: asString(transaction.title) ?? fallback.title,
+      amountCents,
+      type: asLiteral(transaction.type, TRANSACTION_TYPES, fallback.type),
+      category: asString(transaction.category) ?? fallback.category,
+      timestampIso,
+      status: asLiteral(transaction.status, TRANSACTION_STATUSES, fallback.status),
+    }
+  })
+}
+
+const normalizeGoals = (raw: unknown): FinancialGoal[] | null => {
+  if (!Array.isArray(raw)) return null
+  return raw.map((entry, index) => {
+    const fallback = DEFAULT_GOALS[index] ?? DEFAULT_GOALS[0]
+    if (!entry || typeof entry !== "object") {
+      return { ...fallback, id: createGeneratedId("goal", index) }
+    }
+
+    const goal = entry as Partial<
+      FinancialGoal & {
+        date?: string
+        amount?: string
+      }
+    >
+
+    const normalizedTargetAmountCents = asFiniteNumber(goal.targetAmountCents)
+    const hasTargetAmountCents = normalizedTargetAmountCents !== undefined
+    const hasLegacyTargetAmount = typeof goal.amount === "string"
+    const targetAmountCents = hasTargetAmountCents
+      ? Math.round(normalizedTargetAmountCents)
+      : hasLegacyTargetAmount
+        ? parseCurrencyToCents(goal.amount)
+        : fallback.targetAmountCents
+
+    const targetDateIso = parseDateToIso(goal.targetDateIso ?? goal.date, fallback.targetDateIso)
+    const progressCandidate = asFiniteNumber(goal.progress)
+    const progress = progressCandidate === undefined ? fallback.progress : Math.max(0, Math.min(100, progressCandidate))
+
+    return {
+      id: asString(goal.id) ?? createGeneratedId("goal", index),
+      title: asString(goal.title) ?? fallback.title,
+      subtitle: asString(goal.subtitle) ?? fallback.subtitle,
+      iconStyle: asString(goal.iconStyle) ?? fallback.iconStyle,
+      targetDateIso,
+      targetAmountCents,
+      status: asLiteral(goal.status, GOAL_STATUSES, fallback.status),
+      progress,
+    }
+  })
+}
+
+const normalizeStockActions = (raw: unknown): StockAction[] | null => {
+  if (!Array.isArray(raw)) return null
+  return raw.map((entry, index) => {
+    const fallback = DEFAULT_STOCK_ACTIONS[index] ?? DEFAULT_STOCK_ACTIONS[0]
+    if (!entry || typeof entry !== "object") {
+      return { ...fallback, id: createGeneratedId("stock-action", index) }
+    }
+
+    const action = entry as Partial<
+      StockAction & {
+        price?: string
+        tradeDate?: string
+      }
+    >
+
+    const normalizedPriceCents = asFiniteNumber(action.priceCents)
+    const hasPriceCents = normalizedPriceCents !== undefined
+    const hasLegacyPrice = typeof action.price === "string"
+    const priceCents = hasPriceCents
+      ? Math.round(normalizedPriceCents)
+      : hasLegacyPrice
+        ? parseCurrencyToCents(action.price)
+        : fallback.priceCents
+
+    const sharesValue = asFiniteNumber(action.shares) ?? fallback.shares
+    const tradeDateIso = parseDateToIso(action.tradeDateIso ?? action.tradeDate, fallback.tradeDateIso)
+
+    return {
+      id: asString(action.id) ?? createGeneratedId("stock-action", index),
+      symbol: (asString(action.symbol) ?? fallback.symbol).toUpperCase(),
+      action: asLiteral(action.action, STOCK_ACTION_TYPES, fallback.action),
+      shares: sharesValue,
+      priceCents,
+      tradeDateIso,
+      status: asLiteral(action.status, STOCK_ACTION_STATUSES, fallback.status),
+    }
+  })
+}
+
+const normalizeLastSaved = (value: unknown): string => {
+  if (typeof value === "string") {
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString()
+    }
+  }
+  return new Date().toISOString()
+}
+
+const migrateToV2 = (input: {
+  accounts: unknown
+  transactions: unknown
+  goals: unknown
+  stockActions: unknown
+  lastSaved: unknown
+}): PortfolioStateV2 => {
+  return {
+    version: 2,
+    accounts: normalizeAccounts(input.accounts) ?? DEFAULT_ACCOUNTS,
+    transactions: normalizeTransactions(input.transactions) ?? DEFAULT_TRANSACTIONS,
+    goals: normalizeGoals(input.goals) ?? DEFAULT_GOALS,
+    stockActions: normalizeStockActions(input.stockActions) ?? DEFAULT_STOCK_ACTIONS,
+    lastSaved: normalizeLastSaved(input.lastSaved),
+  }
+}
+
+const loadPortfolioState = (): PortfolioStateV2 | null => {
+  const stored = loadJson<PortfolioStateV2>(STORAGE_KEYS.STATE)
+  if (stored.exists && stored.value && isPortfolioStateV2(stored.value)) {
     return stored.value
   }
 
-  const backup = loadJson<PortfolioState>(STORAGE_KEYS.BACKUP)
-  if (backup.exists && backup.value && isPortfolioState(backup.value)) {
+  const backup = loadJson<PortfolioStateV2>(STORAGE_KEYS.BACKUP)
+  if (backup.exists && backup.value && isPortfolioStateV2(backup.value)) {
     return backup.value
   }
 
-  const legacyAccounts = loadJson<AccountItem[]>(STORAGE_KEYS.LEGACY_ACCOUNTS)
-  const legacyTransactions = loadJson<Transaction[]>(STORAGE_KEYS.LEGACY_TRANSACTIONS)
-  const legacyGoals = loadJson<FinancialGoal[]>(STORAGE_KEYS.LEGACY_GOALS)
-  const legacyStockActions = loadJson<StockAction[]>(STORAGE_KEYS.LEGACY_STOCK_ACTIONS)
+  const previousState = loadJson<PortfolioStateV1>(STORAGE_KEYS.PREVIOUS_STATE)
+  if (previousState.exists && previousState.value && isPortfolioStateV1(previousState.value)) {
+    return migrateToV2(previousState.value)
+  }
+
+  const previousBackup = loadJson<PortfolioStateV1>(STORAGE_KEYS.PREVIOUS_BACKUP)
+  if (previousBackup.exists && previousBackup.value && isPortfolioStateV1(previousBackup.value)) {
+    return migrateToV2(previousBackup.value)
+  }
+
+  const legacyAccounts = loadJson<unknown>(STORAGE_KEYS.LEGACY_ACCOUNTS)
+  const legacyTransactions = loadJson<unknown>(STORAGE_KEYS.LEGACY_TRANSACTIONS)
+  const legacyGoals = loadJson<unknown>(STORAGE_KEYS.LEGACY_GOALS)
+  const legacyStockActions = loadJson<unknown>(STORAGE_KEYS.LEGACY_STOCK_ACTIONS)
   const legacyLastSaved = loadJson<string>(STORAGE_KEYS.LAST_SAVED)
 
   if (
@@ -128,21 +429,19 @@ const loadPortfolioState = () => {
     legacyGoals.exists ||
     legacyStockActions.exists
   ) {
-    return {
-      version: 1,
-      accounts: legacyAccounts.value ?? DEFAULT_ACCOUNTS,
-      transactions: legacyTransactions.value ?? DEFAULT_TRANSACTIONS,
-      goals: legacyGoals.value ?? DEFAULT_GOALS,
-      stockActions: legacyStockActions.value ?? DEFAULT_STOCK_ACTIONS,
-      lastSaved: legacyLastSaved.value ?? new Date().toISOString(),
-    }
+    return migrateToV2({
+      accounts: legacyAccounts.value,
+      transactions: legacyTransactions.value,
+      goals: legacyGoals.value,
+      stockActions: legacyStockActions.value,
+      lastSaved: legacyLastSaved.value,
+    })
   }
 
   return null
 }
 
 interface PortfolioContextType {
-  // Accounts
   accounts: AccountItem[]
   addAccount: (account: Omit<AccountItem, "id">) => void
   updateAccount: (id: string, account: Partial<AccountItem>) => void
@@ -150,25 +449,21 @@ interface PortfolioContextType {
   adjustAccountBalance: (id: string, amount: number, type: "deposit" | "withdraw") => void
   transferBetweenAccounts: (fromId: string, toId: string, amount: number) => void
 
-  // Transactions
   transactions: Transaction[]
   addTransaction: (transaction: Omit<Transaction, "id">) => void
   updateTransaction: (id: string, transaction: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
 
-  // Financial Goals
   goals: FinancialGoal[]
   addGoal: (goal: Omit<FinancialGoal, "id">) => void
   updateGoal: (id: string, goal: Partial<FinancialGoal>) => void
   deleteGoal: (id: string) => void
 
-  // Stock Actions
   stockActions: StockAction[]
   addStockAction: (action: Omit<StockAction, "id">) => void
   updateStockAction: (id: string, action: Partial<StockAction>) => void
   deleteStockAction: (id: string) => void
 
-  // Allocation + KPIs
   allocationActual: AllocationActual[]
   allocationTargets: AllocationTarget[]
   diversificationBreakdown: DiversificationBreakdown
@@ -183,10 +478,7 @@ interface PortfolioContextType {
   alertsThresholds: AlertThreshold[]
   planningScenarios: PlanningScenario[]
 
-  // Computed values
   totalBalance: string
-
-  // Save status
   lastSaved: string | null
 }
 
@@ -197,11 +489,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>(DEFAULT_TRANSACTIONS)
   const [goals, setGoals] = useState<FinancialGoal[]>(DEFAULT_GOALS)
   const [stockActions, setStockActions] = useState<StockAction[]>(DEFAULT_STOCK_ACTIONS)
-
-  // Track last saved time from localStorage
   const [lastSaved, setLastSaved] = useState<string | null>(null)
 
-  // Load persisted state on client after mount to avoid hydration mismatch
   useEffect(() => {
     const stored = loadPortfolioState()
     if (stored) {
@@ -215,11 +504,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setLastSaved(canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null)
   }, [])
 
-  // Auto-save combined state to localStorage whenever any data changes
   useEffect(() => {
     const savedAt = new Date().toISOString()
-    const state: PortfolioState = {
-      version: 1,
+    const state: PortfolioStateV2 = {
+      version: 2,
       accounts,
       transactions,
       goals,
@@ -230,17 +518,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setLastSaved(savedAt)
   }, [accounts, transactions, goals, stockActions])
 
-  const formatCurrency = useCallback(
-    (value: number) =>
-      `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-    []
-  )
-
-  // Account operations
   const addAccount = useCallback((account: Omit<AccountItem, "id">) => {
     const newAccount: AccountItem = {
       ...account,
-      id: Date.now().toString(),
+      id: createGeneratedId("account", 0),
     }
     setAccounts((prev) => [...prev, newAccount])
   }, [])
@@ -257,37 +538,33 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
   const adjustAccountBalance = useCallback(
     (id: string, amount: number, type: "deposit" | "withdraw") => {
+      const deltaCents = dollarsToCents(amount)
       setAccounts((prev) =>
         prev.map((account) => {
           if (account.id !== id) return account
-          const current = parseFloat(account.balance.replace(/[$,]/g, ""))
-          const next = type === "deposit" ? current + amount : current - amount
-          return { ...account, balance: formatCurrency(next) }
+          const next = type === "deposit" ? account.balanceCents + deltaCents : account.balanceCents - deltaCents
+          return { ...account, balanceCents: next }
         })
       )
     },
-    [formatCurrency]
+    []
   )
 
-  const transferBetweenAccounts = useCallback(
-    (fromId: string, toId: string, amount: number) => {
-      setAccounts((prev) =>
-        prev.map((account) => {
-          if (account.id !== fromId && account.id !== toId) return account
-          const current = parseFloat(account.balance.replace(/[$,]/g, ""))
-          const next = account.id === fromId ? current - amount : current + amount
-          return { ...account, balance: formatCurrency(next) }
-        })
-      )
-    },
-    [formatCurrency]
-  )
+  const transferBetweenAccounts = useCallback((fromId: string, toId: string, amount: number) => {
+    const deltaCents = dollarsToCents(amount)
+    setAccounts((prev) =>
+      prev.map((account) => {
+        if (account.id !== fromId && account.id !== toId) return account
+        const next = account.id === fromId ? account.balanceCents - deltaCents : account.balanceCents + deltaCents
+        return { ...account, balanceCents: next }
+      })
+    )
+  }, [])
 
-  // Transaction operations
   const addTransaction = useCallback((transaction: Omit<Transaction, "id">) => {
     const newTransaction: Transaction = {
       ...transaction,
-      id: Date.now().toString(),
+      id: createGeneratedId("transaction", 0),
     }
     setTransactions((prev) => [newTransaction, ...prev])
   }, [])
@@ -304,11 +581,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setTransactions((prev) => prev.filter((transaction) => transaction.id !== id))
   }, [])
 
-  // Goal operations
   const addGoal = useCallback((goal: Omit<FinancialGoal, "id">) => {
     const newGoal: FinancialGoal = {
       ...goal,
-      id: Date.now().toString(),
+      id: createGeneratedId("goal", 0),
     }
     setGoals((prev) => [...prev, newGoal])
   }, [])
@@ -323,11 +599,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setGoals((prev) => prev.filter((goal) => goal.id !== id))
   }, [])
 
-  // Stock actions operations
   const addStockAction = useCallback((action: Omit<StockAction, "id">) => {
     const newAction: StockAction = {
       ...action,
-      id: Date.now().toString(),
+      id: createGeneratedId("stock-action", 0),
     }
     setStockActions((prev) => [newAction, ...prev])
   }, [])
@@ -342,16 +617,14 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setStockActions((prev) => prev.filter((action) => action.id !== id))
   }, [])
 
-  // Computed total balance
   const totalBalance = useMemo(() => {
-    const total = accounts.reduce((sum, account) => {
-      const amount = parseFloat(account.balance.replace(/[$,]/g, ""))
+    const totalCents = accounts.reduce((sum, account) => {
       if (account.type === "debt") {
-        return sum - amount
+        return sum - account.balanceCents
       }
-      return sum + amount
+      return sum + account.balanceCents
     }, 0)
-    return `$${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    return formatCurrencyFromCents(totalCents)
   }, [accounts])
 
   const value = useMemo(

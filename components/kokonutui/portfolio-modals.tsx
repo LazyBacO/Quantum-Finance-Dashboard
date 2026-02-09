@@ -1,10 +1,14 @@
 "use client"
 
-import React from "react"
-
-import { useState, useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import { X, Trash2 } from "lucide-react"
-import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
+import {
+  parseCurrencyToCents,
+  type AccountItem,
+  type Transaction,
+  type FinancialGoal,
+  type StockAction,
+} from "@/lib/portfolio-data"
 
 interface ModalProps {
   isOpen: boolean
@@ -12,6 +16,46 @@ interface ModalProps {
   title: string
   children: React.ReactNode
 }
+
+const centsToInputValue = (valueCents?: number, fractionDigits = 2): string => {
+  if (typeof valueCents !== "number" || !Number.isFinite(valueCents)) {
+    return ""
+  }
+  return (valueCents / 100).toFixed(fractionDigits)
+}
+
+const isoToDateInputValue = (valueIso?: string): string => {
+  if (!valueIso) return ""
+  const parsed = new Date(valueIso)
+  if (Number.isNaN(parsed.getTime())) return ""
+  return parsed.toISOString().slice(0, 10)
+}
+
+const isoToMonthInputValue = (valueIso?: string): string => {
+  if (!valueIso) return ""
+  const parsed = new Date(valueIso)
+  if (Number.isNaN(parsed.getTime())) return ""
+  return parsed.toISOString().slice(0, 7)
+}
+
+const dateInputToIso = (value: string): string => {
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString()
+  }
+  return parsed.toISOString()
+}
+
+const monthInputToIso = (value: string): string => {
+  const parsed = new Date(`${value}-01T00:00:00.000Z`)
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString()
+  }
+  return parsed.toISOString()
+}
+
+const todayDateInputValue = () => new Date().toISOString().slice(0, 10)
+const nextMonthInputValue = () => new Date().toISOString().slice(0, 7)
 
 function Modal({ isOpen, onClose, title, children }: ModalProps) {
   useEffect(() => {
@@ -37,10 +81,7 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
       <div className="relative z-10 w-full max-w-md mx-4 fx-panel">
         <div className="flex items-center justify-between p-4 border-b border-border/60">
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-accent/60 transition-colors"
-          >
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-accent/60 transition-colors">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
@@ -50,7 +91,6 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
   )
 }
 
-// Account Modal
 interface AccountModalProps {
   isOpen: boolean
   onClose: () => void
@@ -62,14 +102,14 @@ interface AccountModalProps {
 export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }: AccountModalProps) {
   const [title, setTitle] = useState(initialData?.title || "")
   const [description, setDescription] = useState(initialData?.description || "")
-  const [balance, setBalance] = useState(initialData?.balance.replace("$", "").replace(",", "") || "")
+  const [balance, setBalance] = useState(centsToInputValue(initialData?.balanceCents))
   const [type, setType] = useState<AccountItem["type"]>(initialData?.type || "checking")
 
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title)
       setDescription(initialData.description || "")
-      setBalance(initialData.balance.replace("$", "").replace(/,/g, ""))
+      setBalance(centsToInputValue(initialData.balanceCents))
       setType(initialData.type)
     } else {
       setTitle("")
@@ -81,11 +121,12 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const formattedBalance = `$${parseFloat(balance).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
-    onSave({ title, description, balance: formattedBalance, type })
+    onSave({
+      title,
+      description,
+      balanceCents: parseCurrencyToCents(balance),
+      type,
+    })
     onClose()
   }
 
@@ -93,9 +134,7 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Account" : "Add Account"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Account Name
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Account Name</label>
           <input
             type="text"
             value={title}
@@ -106,9 +145,7 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Description
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
           <input
             type="text"
             value={description}
@@ -118,9 +155,7 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Balance
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Balance</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
             <input
@@ -135,9 +170,7 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Account Type
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Account Type</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as AccountItem["type"])}
@@ -182,7 +215,6 @@ export function AccountModal({ isOpen, onClose, onSave, onDelete, initialData }:
   )
 }
 
-// Transaction Modal
 interface TransactionModalProps {
   isOpen: boolean
   onClose: () => void
@@ -199,7 +231,7 @@ export function TransactionModal({
   initialData,
 }: TransactionModalProps) {
   const [title, setTitle] = useState(initialData?.title || "")
-  const [amount, setAmount] = useState(initialData?.amount.replace("$", "").replace(",", "") || "")
+  const [amount, setAmount] = useState(centsToInputValue(initialData?.amountCents))
   const [type, setType] = useState<Transaction["type"]>(initialData?.type || "outgoing")
   const [category, setCategory] = useState(initialData?.category || "shopping")
   const [status, setStatus] = useState<Transaction["status"]>(initialData?.status || "completed")
@@ -207,7 +239,7 @@ export function TransactionModal({
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title)
-      setAmount(initialData.amount.replace("$", "").replace(/,/g, ""))
+      setAmount(centsToInputValue(initialData.amountCents))
       setType(initialData.type)
       setCategory(initialData.category)
       setStatus(initialData.status)
@@ -222,18 +254,12 @@ export function TransactionModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const now = new Date()
-    const timestamp = `${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}, ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
-    const formattedAmount = `$${parseFloat(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
     onSave({
       title,
-      amount: formattedAmount,
+      amountCents: parseCurrencyToCents(amount),
       type,
       category,
-      timestamp: initialData?.timestamp || timestamp,
+      timestampIso: initialData?.timestampIso || new Date().toISOString(),
       status,
     })
     onClose()
@@ -243,9 +269,7 @@ export function TransactionModal({
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Transaction" : "Add Transaction"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Description
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
           <input
             type="text"
             value={title}
@@ -257,9 +281,7 @@ export function TransactionModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Amount
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Amount</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <input
@@ -274,9 +296,7 @@ export function TransactionModal({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Type
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as Transaction["type"])}
@@ -289,9 +309,7 @@ export function TransactionModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Category
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -308,9 +326,7 @@ export function TransactionModal({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Status
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as Transaction["status"])}
@@ -355,7 +371,6 @@ export function TransactionModal({
   )
 }
 
-// Stock Action Modal
 interface StockActionModalProps {
   isOpen: boolean
   onClose: () => void
@@ -371,13 +386,13 @@ export function StockActionModal({
   onDelete,
   initialData,
 }: StockActionModalProps) {
-  const getTodayLabel = () =>
-    new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   const [symbol, setSymbol] = useState(initialData?.symbol || "")
   const [action, setAction] = useState<StockAction["action"]>(initialData?.action || "buy")
   const [shares, setShares] = useState(initialData?.shares.toString() || "1")
-  const [price, setPrice] = useState(initialData?.price.replace("$", "").replace(",", "") || "")
-  const [tradeDate, setTradeDate] = useState(initialData?.tradeDate || "")
+  const [price, setPrice] = useState(centsToInputValue(initialData?.priceCents))
+  const [tradeDate, setTradeDate] = useState(
+    initialData ? isoToDateInputValue(initialData.tradeDateIso) : todayDateInputValue()
+  )
   const [status, setStatus] = useState<StockAction["status"]>(initialData?.status || "executed")
 
   useEffect(() => {
@@ -385,31 +400,27 @@ export function StockActionModal({
       setSymbol(initialData.symbol)
       setAction(initialData.action)
       setShares(initialData.shares.toString())
-      setPrice(initialData.price.replace("$", "").replace(/,/g, ""))
-      setTradeDate(initialData.tradeDate)
+      setPrice(centsToInputValue(initialData.priceCents))
+      setTradeDate(isoToDateInputValue(initialData.tradeDateIso))
       setStatus(initialData.status)
     } else {
       setSymbol("")
       setAction("buy")
       setShares("1")
       setPrice("")
-      setTradeDate(getTodayLabel())
+      setTradeDate(todayDateInputValue())
       setStatus("executed")
     }
   }, [initialData, isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const formattedPrice = `$${parseFloat(price).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
     onSave({
       symbol: symbol.toUpperCase(),
       action,
-      shares: parseFloat(shares),
-      price: formattedPrice,
-      tradeDate: tradeDate || getTodayLabel(),
+      shares: Number.parseFloat(shares) || 0,
+      priceCents: parseCurrencyToCents(price),
+      tradeDateIso: dateInputToIso(tradeDate || todayDateInputValue()),
       status,
     })
     onClose()
@@ -419,9 +430,7 @@ export function StockActionModal({
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Trade" : "Add Trade"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Ticker Symbol
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Ticker Symbol</label>
           <input
             type="text"
             value={symbol}
@@ -433,9 +442,7 @@ export function StockActionModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Action
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Action</label>
             <select
               value={action}
               onChange={(e) => setAction(e.target.value as StockAction["action"])}
@@ -446,9 +453,7 @@ export function StockActionModal({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Shares
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Shares</label>
             <input
               type="number"
               step="0.01"
@@ -462,9 +467,7 @@ export function StockActionModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Price per Share
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Price per Share</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <input
@@ -479,23 +482,18 @@ export function StockActionModal({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Trade Date
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Trade Date</label>
             <input
-              type="text"
+              type="date"
               value={tradeDate}
               onChange={(e) => setTradeDate(e.target.value)}
               required
               className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-              placeholder="Mar 2, 2026"
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Status
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as StockAction["status"])}
@@ -539,7 +537,6 @@ export function StockActionModal({
   )
 }
 
-// Goal Modal
 interface GoalModalProps {
   isOpen: boolean
   onClose: () => void
@@ -551,21 +548,23 @@ interface GoalModalProps {
 export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: GoalModalProps) {
   const [title, setTitle] = useState(initialData?.title || "")
   const [subtitle, setSubtitle] = useState(initialData?.subtitle || "")
-  const [amount, setAmount] = useState(initialData?.amount?.replace("$", "").replace(",", "") || "")
+  const [amount, setAmount] = useState(centsToInputValue(initialData?.targetAmountCents, 0))
   const [iconStyle, setIconStyle] = useState(initialData?.iconStyle || "savings")
   const [status, setStatus] = useState<FinancialGoal["status"]>(initialData?.status || "pending")
   const [progress, setProgress] = useState(initialData?.progress?.toString() || "0")
-  const [targetDate, setTargetDate] = useState(initialData?.date.replace("Target: ", "") || "")
+  const [targetDate, setTargetDate] = useState(
+    initialData ? isoToMonthInputValue(initialData.targetDateIso) : nextMonthInputValue()
+  )
 
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title)
       setSubtitle(initialData.subtitle)
-      setAmount(initialData.amount?.replace("$", "").replace(/,/g, "") || "")
+      setAmount(centsToInputValue(initialData.targetAmountCents, 0))
       setIconStyle(initialData.iconStyle)
       setStatus(initialData.status)
       setProgress(initialData.progress?.toString() || "0")
-      setTargetDate(initialData.date.replace("Target: ", ""))
+      setTargetDate(isoToMonthInputValue(initialData.targetDateIso))
     } else {
       setTitle("")
       setSubtitle("")
@@ -573,26 +572,20 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
       setIconStyle("savings")
       setStatus("pending")
       setProgress("0")
-      setTargetDate("")
+      setTargetDate(nextMonthInputValue())
     }
   }, [initialData, isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const formattedAmount = amount
-      ? `$${parseFloat(amount).toLocaleString("en-US", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })}`
-      : undefined
     onSave({
       title,
       subtitle,
-      amount: formattedAmount,
+      targetAmountCents: amount ? parseCurrencyToCents(amount) : undefined,
       iconStyle,
       status,
-      progress: parseInt(progress) || 0,
-      date: `Target: ${targetDate}`,
+      progress: Number.parseInt(progress, 10) || 0,
+      targetDateIso: monthInputToIso(targetDate || nextMonthInputValue()),
     })
     onClose()
   }
@@ -601,9 +594,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Goal" : "Add Goal"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Goal Name
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Goal Name</label>
           <input
             type="text"
             value={title}
@@ -614,9 +605,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Description
-          </label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
           <input
             type="text"
             value={subtitle}
@@ -628,9 +617,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Target Amount
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Target Amount</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <input
@@ -644,24 +631,19 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Target Date
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Target Date</label>
             <input
-              type="text"
+              type="month"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
               required
               className="w-full px-3 py-2 rounded-lg border border-border/60 bg-background/40 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-              placeholder="Dec 2026"
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Category
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
             <select
               value={iconStyle}
               onChange={(e) => setIconStyle(e.target.value)}
@@ -673,9 +655,7 @@ export function GoalModal({ isOpen, onClose, onSave, onDelete, initialData }: Go
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Status
-            </label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as FinancialGoal["status"])}

@@ -1,7 +1,17 @@
 import { streamText, convertToModelMessages } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 import { z } from "zod"
-import type { AccountItem, Transaction, FinancialGoal, StockAction } from "@/lib/portfolio-data"
+import {
+  centsToDollars,
+  formatCurrencyFromCents,
+  formatMonthYearFromIso,
+  formatRelativeTimestampFromIso,
+  formatShortDateFromIso,
+  type AccountItem,
+  type Transaction,
+  type FinancialGoal,
+  type StockAction,
+} from "@/lib/portfolio-data"
 
 interface PortfolioData {
   accounts: AccountItem[]
@@ -26,17 +36,17 @@ const accountSchema = z.object({
   id: z.string().min(1).max(100),
   title: z.string().min(1).max(120),
   description: z.string().max(240).optional(),
-  balance: z.string().min(1).max(40),
+  balanceCents: z.number().int().safe(),
   type: z.enum(["savings", "checking", "investment", "debt"]),
 })
 
 const transactionSchema = z.object({
   id: z.string().min(1).max(100),
   title: z.string().min(1).max(160),
-  amount: z.string().min(1).max(40),
+  amountCents: z.number().int().safe(),
   type: z.enum(["incoming", "outgoing"]),
   category: z.string().min(1).max(80),
-  timestamp: z.string().min(1).max(80),
+  timestampIso: z.string().min(1).max(80),
   status: z.enum(["completed", "pending", "failed"]),
 })
 
@@ -45,8 +55,8 @@ const goalSchema = z.object({
   title: z.string().min(1).max(120),
   subtitle: z.string().min(1).max(180),
   iconStyle: z.string().min(1).max(40),
-  date: z.string().min(1).max(80),
-  amount: z.string().max(40).optional(),
+  targetDateIso: z.string().min(1).max(80),
+  targetAmountCents: z.number().int().safe().optional(),
   status: z.enum(["pending", "in-progress", "completed"]),
   progress: z.number().min(0).max(100).optional(),
 })
@@ -56,8 +66,8 @@ const stockActionSchema = z.object({
   symbol: z.string().min(1).max(20),
   action: z.enum(["buy", "sell"]),
   shares: z.number().nonnegative(),
-  price: z.string().min(1).max(40),
-  tradeDate: z.string().min(1).max(80),
+  priceCents: z.number().int().safe(),
+  tradeDateIso: z.string().min(1).max(80),
   status: z.enum(["executed", "pending", "cancelled"]),
 })
 
@@ -180,21 +190,29 @@ function enforceRateLimit(ip: string, now = Date.now()) {
 }
 
 function calculateSummary(accounts: AccountItem[]) {
-  const totalSavings = accounts
-    .filter((a) => a.type === "savings")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
+  const totalSavings = centsToDollars(
+    accounts
+      .filter((a) => a.type === "savings")
+      .reduce((sum, a) => sum + a.balanceCents, 0)
+  )
 
-  const totalInvestments = accounts
-    .filter((a) => a.type === "investment")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
+  const totalInvestments = centsToDollars(
+    accounts
+      .filter((a) => a.type === "investment")
+      .reduce((sum, a) => sum + a.balanceCents, 0)
+  )
 
-  const totalDebt = accounts
-    .filter((a) => a.type === "debt")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
+  const totalDebt = centsToDollars(
+    accounts
+      .filter((a) => a.type === "debt")
+      .reduce((sum, a) => sum + a.balanceCents, 0)
+  )
 
-  const totalChecking = accounts
-    .filter((a) => a.type === "checking")
-    .reduce((sum, a) => sum + parseFloat(a.balance.replace(/[$,]/g, "")), 0)
+  const totalChecking = centsToDollars(
+    accounts
+      .filter((a) => a.type === "checking")
+      .reduce((sum, a) => sum + a.balanceCents, 0)
+  )
 
   return {
     totalSavings,
@@ -250,10 +268,7 @@ export async function POST(req: Request) {
   }
 
   const { messages, portfolioData } = parsedPayload.data
-
-  // Use dynamic portfolio data if provided, otherwise use defaults
   const portfolio: PortfolioData = portfolioData || DEFAULT_PORTFOLIO
-
   const summary = calculateSummary(portfolio.accounts)
 
   const systemPrompt = `You are an expert financial advisor AI agent integrated into the user's financial dashboard. You have access to their complete financial portfolio data and can provide personalized investment advice and proactive guidance.
@@ -263,7 +278,7 @@ export async function POST(req: Request) {
 ### Total Balance: ${portfolio.totalBalance}
 
 ### Accounts:
-${portfolio.accounts.map((a: AccountItem) => `- ${a.title} (${a.type}): ${a.balance} - ${a.description || "N/A"}`).join("\n") || "No accounts found"}
+${portfolio.accounts.map((a: AccountItem) => `- ${a.title} (${a.type}): ${formatCurrencyFromCents(a.balanceCents)} - ${a.description || "N/A"}`).join("\n") || "No accounts found"}
 
 ### Financial Summary:
 - Total Savings: $${summary.totalSavings.toFixed(2)}
@@ -273,13 +288,13 @@ ${portfolio.accounts.map((a: AccountItem) => `- ${a.title} (${a.type}): ${a.bala
 - Net Worth: $${summary.netWorth.toFixed(2)}
 
 ### Recent Transactions:
-${portfolio.transactions.map((t: Transaction) => `- ${t.title}: ${t.type === "incoming" ? "+" : "-"}${t.amount} (${t.status}) - ${t.timestamp}`).join("\n") || "No recent transactions"}
+${portfolio.transactions.map((t: Transaction) => `- ${t.title}: ${t.type === "incoming" ? "+" : "-"}${formatCurrencyFromCents(t.amountCents)} (${t.status}) - ${formatRelativeTimestampFromIso(t.timestampIso)}`).join("\n") || "No recent transactions"}
 
 ### Financial Goals:
-${portfolio.goals.map((g: FinancialGoal) => `- ${g.title}: Target ${g.amount || "N/A"}, Progress: ${g.progress || 0}%, Status: ${g.status}, ${g.date}`).join("\n") || "No goals set"}
+${portfolio.goals.map((g: FinancialGoal) => `- ${g.title}: Target ${typeof g.targetAmountCents === "number" ? formatCurrencyFromCents(g.targetAmountCents) : "N/A"}, Progress: ${g.progress || 0}%, Status: ${g.status}, Target date ${formatMonthYearFromIso(g.targetDateIso)}`).join("\n") || "No goals set"}
 
 ### Stock Market Actions:
-${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpperCase()}: ${a.shares} shares @ ${a.price} (${a.status}) - ${a.tradeDate}`).join("\n") || "No stock actions"}
+${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpperCase()}: ${a.shares} shares @ ${formatCurrencyFromCents(a.priceCents)} (${a.status}) - ${formatShortDateFromIso(a.tradeDateIso)}`).join("\n") || "No stock actions"}
 
 ## Your Role:
 1. Analyze the user's portfolio and provide personalized investment advice

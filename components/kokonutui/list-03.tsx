@@ -18,7 +18,11 @@ import type { LucideIcon } from "lucide-react"
 import React from "react"
 import { usePortfolio } from "@/lib/portfolio-context"
 import { GoalModal } from "./portfolio-modals"
-import type { FinancialGoal } from "@/lib/portfolio-data"
+import {
+  formatCurrencyFromCents,
+  formatMonthYearFromIso,
+  type FinancialGoal,
+} from "@/lib/portfolio-data"
 
 interface List03Props {
   className?: string
@@ -172,16 +176,18 @@ export default function List03({ className }: List03Props) {
                     </div>
                   )}
 
-                  {item.amount && (
+                  {typeof item.targetAmountCents === "number" && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-foreground">{item.amount}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {formatCurrencyFromCents(item.targetAmountCents)}
+                      </span>
                       <span className="text-xs text-muted-foreground">target</span>
                     </div>
                   )}
 
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5 mr-1.5" />
-                    <span>{item.date}</span>
+                    <span>{`Target: ${formatMonthYearFromIso(item.targetDateIso)}`}</span>
                   </div>
                 </div>
 

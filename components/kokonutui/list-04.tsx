@@ -5,7 +5,12 @@ import { cn } from "@/lib/utils"
 import { ArrowUpRight, ArrowDownLeft, Plus, Pencil } from "lucide-react"
 import { usePortfolio } from "@/lib/portfolio-context"
 import { StockActionModal } from "./portfolio-modals"
-import type { StockAction } from "@/lib/portfolio-data"
+import {
+  centsToDollars,
+  formatCurrencyFromCents,
+  formatShortDateFromIso,
+  type StockAction,
+} from "@/lib/portfolio-data"
 
 interface List04Props {
   className?: string
@@ -82,7 +87,7 @@ export default function List04({ className }: List04Props) {
               </div>
             ) : (
               stockActions.map((action) => {
-                const totalValue = action.shares * parseFloat(action.price.replace(/[$,]/g, ""))
+                const totalValue = action.shares * centsToDollars(action.priceCents)
                 const Icon = action.action === "buy" ? ArrowDownLeft : ArrowUpRight
                 return (
                   <div
@@ -140,7 +145,7 @@ export default function List04({ className }: List04Props) {
                           </span>
                         </div>
                         <p className="text-[11px] text-muted-foreground">
-                          {action.shares} shares · {action.tradeDate}
+                          {action.shares} shares · {formatShortDateFromIso(action.tradeDateIso)}
                         </p>
                       </div>
                     </div>
@@ -148,12 +153,13 @@ export default function List04({ className }: List04Props) {
                     <div className="flex items-center gap-2">
                       <div className="text-right">
                         <p className="text-xs font-semibold text-foreground">
-                          $
-                          {(Number.isNaN(totalValue) ? 0 : totalValue).toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                          })}
+                          {formatCurrencyFromCents(
+                            Math.round((Number.isNaN(totalValue) ? 0 : totalValue) * 100)
+                          )}
                         </p>
-                        <p className="text-[11px] text-muted-foreground">{action.price}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {formatCurrencyFromCents(action.priceCents)}
+                        </p>
                       </div>
                       <Pencil className="w-3 h-3 text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
