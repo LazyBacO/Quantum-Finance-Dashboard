@@ -1,0 +1,21 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1220" />
+      <stop offset="1" stop-color="#102A43" />
+    </linearGradient>
+    <linearGradient id="accent" x1="200" y1="120" x2="1000" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4" />
+      <stop offset="1" stop-color="#60A5FA" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="80" y="80" width="1040" height="470" rx="32" fill="#0F172A" opacity="0.8" />
+  <rect x="130" y="190" width="480" height="22" rx="11" fill="#1E293B" />
+  <rect x="130" y="240" width="360" height="18" rx="9" fill="#1E293B" />
+  <rect x="130" y="286" width="430" height="18" rx="9" fill="#1E293B" />
+  <path d="M680 460C740 400 790 420 850 360C905 305 960 335 1030 250" stroke="url(#accent)" stroke-width="10" stroke-linecap="round" />
+  <circle cx="1030" cy="250" r="13" fill="#22D3EE" />
+  <text x="130" y="150" fill="#FFFFFF" font-family="Geist, Arial, sans-serif" font-size="68" font-weight="700">OpenNova Finance</text>
+  <text x="130" y="350" fill="#94A3B8" font-family="Geist, Arial, sans-serif" font-size="34" font-weight="500">Dashboard financier avec IA, sync multi-device, budget et alertes intelligentes</text>
+</svg>

@@ -90,30 +90,32 @@ export default function Sidebar() {
     () => [
       {
         id: "overview",
-        label: "Overview",
+        label: "Vue d'ensemble",
         items: [
-          { href: "/dashboard", icon: Home, label: "Dashboard" },
-          { href: "/dashboard#ai-advisor", icon: Bot, label: "AI Advisor" },
-          { href: "/dashboard#accounts", icon: BarChart2, label: "Accounts Overview" },
+          { href: "/dashboard", icon: Home, label: "Tableau de bord" },
+          { href: "/dashboard#ai-advisor", icon: Bot, label: "Agent IA" },
+          { href: "/dashboard#accounts", icon: BarChart2, label: "Vue comptes" },
         ],
       },
       {
         id: "portfolio",
-        label: "Portfolio",
+        label: "Portefeuille",
         items: [
-          { href: "/dashboard#accounts", icon: Wallet, label: "Accounts" },
+          { href: "/dashboard#accounts", icon: Wallet, label: "Comptes" },
           { href: "/dashboard#transactions", icon: Receipt, label: "Transactions" },
           { href: "/dashboard#insights", icon: TrendingUp, label: "Insights", badge: "New" },
-          { href: "/dashboard#stock-actions", icon: TrendingUp, label: "Stock Actions" },
+          { href: "/dashboard#stock-actions", icon: TrendingUp, label: "Ordres bourse" },
         ],
       },
       {
         id: "planning",
-        label: "Planning",
+        label: "Planification",
         items: [
-          { href: "/dashboard#goals", icon: Target, label: "Goals" },
-          { href: "/dashboard#goals", icon: PiggyBank, label: "Savings" },
-          { href: "/dashboard#transactions", icon: CreditCard, label: "Budgets" },
+          { href: "/dashboard#goals", icon: Target, label: "Objectifs" },
+          { href: "/dashboard#goals", icon: PiggyBank, label: "Épargne" },
+          { href: "/dashboard#budget-cashflow", icon: CreditCard, label: "Budgets" },
+          { href: "/dashboard#monthly-budget", icon: Wallet, label: "Budget mensuel" },
+          { href: "/dashboard#smart-tools", icon: Bot, label: "Simulateur & CSV" },
           { href: "/planning/alerts-notifications", icon: Bell, label: "Alertes & notifications" },
           { href: "/dashboard#integrations", icon: Plug, label: "Intégrations" },
         ],
@@ -155,7 +157,7 @@ export default function Sidebar() {
               <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-lg font-semibold tracking-tight fx-brand">Quantum Finance Dashboard</span>
+              <span className="text-lg font-semibold tracking-tight fx-brand">OpenNova Finance</span>
             </div>
           </div>
 
@@ -193,10 +195,10 @@ export default function Sidebar() {
           <div className="px-4 py-4 border-t border-border/60">
             <div className="space-y-1">
               <NavItem href="/settings" icon={Settings}>
-                Settings
+                Paramètres
               </NavItem>
               <NavItem href="#" icon={HelpCircle}>
-                Help
+                Aide
               </NavItem>
             </div>
           </div>

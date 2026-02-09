@@ -7,6 +7,10 @@ Modern financial dashboard with AI-powered insights, portfolio tracking, and a f
 - AI advisor with portfolio-aware guidance
 - Auto-save to localStorage
 - Dark mode + neon/glass visual style
+- Server sync API with per-user sync key (`/api/portfolio`)
+- Monthly budget planner by category
+- Smart alerts, goal simulator, and CSV import/export tools
+- CI quality gates (typecheck, lint, tests, build)
 
 ## Getting Started
 
@@ -27,6 +31,8 @@ OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-5.3-codex
 # Optional UI label (defaults to GPT-5.3-Codex)
 NEXT_PUBLIC_OPENAI_MODEL_LABEL=GPT-5.3-Codex
+# Optional public canonical URL for SEO metadata
+NEXT_PUBLIC_SITE_URL=https://your-domain.example
 # Optional: secure /api/notification-cron with this secret
 NOTIFICATION_CRON_SECRET=your_cron_secret
 ```

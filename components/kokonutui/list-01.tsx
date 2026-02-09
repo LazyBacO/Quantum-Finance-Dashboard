@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import {
   ArrowUpRight,
@@ -16,15 +16,57 @@ import {
 import { usePortfolio } from "@/lib/portfolio-context"
 import { AccountModal } from "./portfolio-modals"
 import { formatCurrencyFromCents, type AccountItem } from "@/lib/portfolio-data"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface List01Props {
   className?: string
 }
 
 export default function List01({ className }: List01Props) {
-  const { accounts, totalBalance, addAccount, updateAccount, deleteAccount } = usePortfolio()
+  const {
+    accounts,
+    totalBalance,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    transferBetweenAccounts,
+    adjustAccountBalance,
+  } = usePortfolio()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AccountItem | undefined>(undefined)
+  const [isSendOpen, setIsSendOpen] = useState(false)
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false)
+  const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const [sendForm, setSendForm] = useState({ fromId: "", toId: "", amount: "" })
+  const [topUpForm, setTopUpForm] = useState({ accountId: "", amount: "" })
+  const [withdrawForm, setWithdrawForm] = useState({ accountId: "", amount: "" })
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (accounts.length === 0) {
+      setSendForm({ fromId: "", toId: "", amount: "" })
+      setTopUpForm({ accountId: "", amount: "" })
+      setWithdrawForm({ accountId: "", amount: "" })
+      return
+    }
+
+    setTopUpForm((current) => ({
+      accountId: current.accountId || accounts[0].id,
+      amount: current.amount,
+    }))
+    setWithdrawForm((current) => ({
+      accountId: current.accountId || accounts[0].id,
+      amount: current.amount,
+    }))
+
+    if (accounts.length > 1) {
+      setSendForm((current) => ({
+        fromId: current.fromId || accounts[0].id,
+        toId: current.toId || accounts[1].id,
+        amount: current.amount,
+      }))
+    }
+  }, [accounts])
 
   const accountTotals = accounts.reduce(
     (totals, account) => {
@@ -61,6 +103,53 @@ export default function List01({ className }: List01Props) {
     if (editingAccount) {
       deleteAccount(editingAccount.id)
     }
+  }
+
+  const handleSendSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const amount = Number.parseFloat(sendForm.amount)
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setActionError("Le montant doit être supérieur à 0.")
+      return
+    }
+    if (!sendForm.fromId || !sendForm.toId || sendForm.fromId === sendForm.toId) {
+      setActionError("Sélectionnez deux comptes différents.")
+      return
+    }
+
+    transferBetweenAccounts(sendForm.fromId, sendForm.toId, amount)
+    setActionError(null)
+    setSendForm((current) => ({ ...current, amount: "" }))
+    setIsSendOpen(false)
+  }
+
+  const handleTopUpSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const amount = Number.parseFloat(topUpForm.amount)
+    if (!topUpForm.accountId || !Number.isFinite(amount) || amount <= 0) {
+      setActionError("Choisissez un compte et un montant valide.")
+      return
+    }
+
+    adjustAccountBalance(topUpForm.accountId, amount, "deposit")
+    setActionError(null)
+    setTopUpForm((current) => ({ ...current, amount: "" }))
+    setIsTopUpOpen(false)
+  }
+
+  const handleWithdrawSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const amount = Number.parseFloat(withdrawForm.amount)
+    if (!withdrawForm.accountId || !Number.isFinite(amount) || amount <= 0) {
+      setActionError("Choisissez un compte et un montant valide.")
+      return
+    }
+
+    adjustAccountBalance(withdrawForm.accountId, amount, "withdraw")
+    setActionError(null)
+    setWithdrawForm((current) => ({ ...current, amount: "" }))
+    setIsMoreOpen(false)
   }
 
   return (
@@ -198,6 +287,14 @@ export default function List01({ className }: List01Props) {
             </button>
             <button
               type="button"
+              onClick={() => {
+                if (accounts.length < 2) {
+                  setActionError("Au moins deux comptes sont nécessaires pour envoyer un transfert.")
+                  return
+                }
+                setActionError(null)
+                setIsSendOpen(true)
+              }}
               className={cn(
                 "flex items-center justify-center gap-1.5",
                 "py-2 px-2.5 rounded-lg",
@@ -215,6 +312,14 @@ export default function List01({ className }: List01Props) {
             </button>
             <button
               type="button"
+              onClick={() => {
+                if (accounts.length === 0) {
+                  setActionError("Aucun compte disponible pour effectuer un top-up.")
+                  return
+                }
+                setActionError(null)
+                setIsTopUpOpen(true)
+              }}
               className={cn(
                 "flex items-center justify-center gap-1.5",
                 "py-2 px-2.5 rounded-lg",
@@ -232,6 +337,10 @@ export default function List01({ className }: List01Props) {
             </button>
             <button
               type="button"
+              onClick={() => {
+                setActionError(null)
+                setIsMoreOpen(true)
+              }}
               className={cn(
                 "flex items-center justify-center gap-1.5",
                 "py-2 px-2.5 rounded-lg",
@@ -248,6 +357,7 @@ export default function List01({ className }: List01Props) {
               <span>More</span>
             </button>
           </div>
+          {actionError && <p className="mt-2 text-[11px] text-rose-600">{actionError}</p>}
         </div>
       </div>
 
@@ -258,6 +368,176 @@ export default function List01({ className }: List01Props) {
         onDelete={editingAccount ? handleDeleteAccount : undefined}
         initialData={editingAccount}
       />
+
+      <Dialog open={isSendOpen} onOpenChange={setIsSendOpen}>
+        <DialogContent className="border-border/60 bg-background/95">
+          <DialogHeader>
+            <DialogTitle>Envoyer entre comptes</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-3" onSubmit={handleSendSubmit}>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Compte source</label>
+              <select
+                value={sendForm.fromId}
+                onChange={(event) => setSendForm((current) => ({ ...current, fromId: event.target.value }))}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Compte destinataire</label>
+              <select
+                value={sendForm.toId}
+                onChange={(event) => setSendForm((current) => ({ ...current, toId: event.target.value }))}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Montant (USD)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={sendForm.amount}
+                onChange={(event) => setSendForm((current) => ({ ...current, amount: event.target.value }))}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                placeholder="100.00"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full rounded-md border border-border/60 bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Envoyer
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+        <DialogContent className="border-border/60 bg-background/95">
+          <DialogHeader>
+            <DialogTitle>Top-up d&apos;un compte</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-3" onSubmit={handleTopUpSubmit}>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Compte</label>
+              <select
+                value={topUpForm.accountId}
+                onChange={(event) =>
+                  setTopUpForm((current) => ({ ...current, accountId: event.target.value }))
+                }
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Montant (USD)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={topUpForm.amount}
+                onChange={(event) => setTopUpForm((current) => ({ ...current, amount: event.target.value }))}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                placeholder="250.00"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full rounded-md border border-border/60 bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Confirmer le top-up
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+        <DialogContent className="border-border/60 bg-background/95">
+          <DialogHeader>
+            <DialogTitle>Actions supplémentaires</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <form className="space-y-3" onSubmit={handleWithdrawSubmit}>
+              <p className="text-xs font-semibold text-foreground">Retrait rapide</p>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Compte</label>
+                <select
+                  value={withdrawForm.accountId}
+                  onChange={(event) =>
+                    setWithdrawForm((current) => ({ ...current, accountId: event.target.value }))
+                  }
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Montant du retrait (USD)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={withdrawForm.amount}
+                  onChange={(event) =>
+                    setWithdrawForm((current) => ({ ...current, amount: event.target.value }))
+                  }
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  placeholder="120.00"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full rounded-md border border-border/60 bg-accent px-3 py-2 text-sm font-medium text-foreground hover:bg-accent/80"
+              >
+                Effectuer le retrait
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => {
+                addAccount({
+                  title: "Nouveau compte épargne",
+                  description: "Ajout rapide",
+                  balanceCents: 0,
+                  type: "savings",
+                })
+                setIsMoreOpen(false)
+              }}
+              className="w-full rounded-md border border-border/60 bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Créer un compte épargne rapide
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

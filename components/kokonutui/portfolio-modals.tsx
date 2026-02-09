@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { X, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import {
   parseCurrencyToCents,
   type AccountItem,
@@ -9,6 +9,7 @@ import {
   type FinancialGoal,
   type StockAction,
 } from "@/lib/portfolio-data"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface ModalProps {
   isOpen: boolean
@@ -58,36 +59,22 @@ const todayDateInputValue = () => new Date().toISOString().slice(0, 10)
 const nextMonthInputValue = () => new Date().toISOString().slice(0, 7)
 
 function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
-    }
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [isOpen])
-
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
-      />
-      <div className="relative z-10 w-full max-w-md mx-4 fx-panel">
-        <div className="flex items-center justify-between p-4 border-b border-border/60">
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-accent/60 transition-colors">
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </div>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose()
+        }
+      }}
+    >
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md border-border/60 bg-background/95 p-0 backdrop-blur-xl">
+        <DialogHeader className="border-b border-border/60 p-4 pr-10">
+          <DialogTitle className="text-lg font-semibold text-foreground">{title}</DialogTitle>
+        </DialogHeader>
         <div className="p-4">{children}</div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

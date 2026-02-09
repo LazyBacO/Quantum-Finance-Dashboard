@@ -22,8 +22,10 @@ import InsightsPanel from "./insights-panel"
 import PerformanceAllocation from "./performance-allocation"
 import Rebalancing from "./rebalancing"
 import BudgetCashflow from "./budget-cashflow"
+import MonthlyBudgetPlanner from "./monthly-budget-planner"
 import PlanningScenarios from "./planning-scenarios"
 import Integrations from "./integrations"
+import SmartFinanceTools from "./smart-finance-tools"
 import { PortfolioProvider } from "@/lib/portfolio-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -38,7 +40,9 @@ export default function Content() {
       "stock-actions": "portfolio",
       rebalancing: "portfolio",
       "budget-cashflow": "budget",
+      "monthly-budget": "budget",
       "planning-scenarios": "budget",
+      "smart-tools": "budget",
       goals: "budget",
       integrations: "integrations",
     }),
@@ -129,7 +133,7 @@ export default function Content() {
                   <Wallet className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Accounts</h2>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Comptes</h2>
                   <p className="text-xs text-muted-foreground">Aperçu rapide des soldes</p>
                 </div>
               </div>
@@ -143,7 +147,7 @@ export default function Content() {
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                    Recent Transactions
+                    Transactions récentes
                   </h2>
                   <p className="text-xs text-muted-foreground">Flux en temps réel des mouvements</p>
                 </div>
@@ -158,7 +162,7 @@ export default function Content() {
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                    Performance & Allocation
+                    Performance & allocation
                   </h2>
                   <p className="text-xs text-muted-foreground">Comparaison vs objectifs</p>
                 </div>
@@ -173,7 +177,7 @@ export default function Content() {
                 <TrendingUp className="w-4 h-4 text-primary" />
               </div>
               <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                Insights & Alerts
+                Insights & alertes
               </h2>
             </div>
             <InsightsPanel className="w-full" />
@@ -185,7 +189,7 @@ export default function Content() {
                 <TrendingUp className="w-4 h-4 text-primary" />
               </div>
               <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                Stock Market Actions
+                Actions de marché
               </h2>
             </div>
             <List04 className="h-full w-full" />
@@ -217,6 +221,18 @@ export default function Content() {
             <BudgetCashflow className="w-full" />
           </section>
 
+          <section id="monthly-budget" className="space-y-3 scroll-mt-24">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+                <PiggyBank className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Budget mensuel par catégorie
+              </h2>
+            </div>
+            <MonthlyBudgetPlanner className="w-full" />
+          </section>
+
           <section id="planning-scenarios" className="space-y-3 scroll-mt-24">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
@@ -229,13 +245,25 @@ export default function Content() {
             <PlanningScenarios className="w-full" />
           </section>
 
+          <section id="smart-tools" className="space-y-3 scroll-mt-24">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
+                <ClipboardList className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Alertes intelligentes & simulateur
+              </h2>
+            </div>
+            <SmartFinanceTools className="w-full" />
+          </section>
+
           <section id="goals" className="space-y-3 scroll-mt-24">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl border border-border/60 bg-primary/10">
                 <Target className="w-4 h-4 text-primary" />
               </div>
               <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                Financial Goals
+                Objectifs financiers
               </h2>
             </div>
             <List03 />

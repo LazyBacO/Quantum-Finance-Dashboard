@@ -91,6 +91,22 @@ export default function SettingsPage() {
     void persistSettings(settings)
   }, [persistSettings, settings])
 
+  const generateSyncKey = useCallback(() => {
+    const generated =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID().replace(/-/g, "")
+        : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+    updateSettings(
+      {
+        sync: {
+          ...settings.sync,
+          key: generated,
+        },
+      },
+      true
+    )
+  }, [settings.sync, updateSettings])
+
   const isLoading = status === "loading"
 
   return (
@@ -314,7 +330,12 @@ export default function SettingsPage() {
                   id="settings-language"
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={settings.language}
-                  onChange={(event) => updateSettings({ language: event.target.value }, true)}
+                  onChange={(event) =>
+                    updateSettings(
+                      { language: event.target.value as SettingsData["language"] },
+                      true
+                    )
+                  }
                   disabled={isLoading}
                 >
                   <option value="fr">Français</option>
@@ -330,7 +351,12 @@ export default function SettingsPage() {
                   id="settings-currency"
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={settings.currency}
-                  onChange={(event) => updateSettings({ currency: event.target.value }, true)}
+                  onChange={(event) =>
+                    updateSettings(
+                      { currency: event.target.value as SettingsData["currency"] },
+                      true
+                    )
+                  }
                   disabled={isLoading}
                 >
                   <option value="eur">EUR (€)</option>
@@ -346,7 +372,12 @@ export default function SettingsPage() {
                   id="settings-timezone"
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={settings.timezone}
-                  onChange={(event) => updateSettings({ timezone: event.target.value }, true)}
+                  onChange={(event) =>
+                    updateSettings(
+                      { timezone: event.target.value as SettingsData["timezone"] },
+                      true
+                    )
+                  }
                   disabled={isLoading}
                 >
                   <option value="paris">Europe/Paris</option>
@@ -360,20 +391,33 @@ export default function SettingsPage() {
           <Card className="xl:col-span-2">
             <CardHeader>
               <CardTitle>Confidentialité &amp; synchronisation</CardTitle>
-              <CardDescription>Gérez les partages et la synchronisation des données.</CardDescription>
+              <CardDescription>
+                Gérez la clé de synchronisation et le partage des données.
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <label className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Synchronisation bancaire</p>
+                  <p className="text-sm font-medium text-foreground">Synchronisation multi-appareils</p>
                   <p className="text-xs text-muted-foreground">
-                    Mettre à jour automatiquement les comptes et transactions.
+                    Active la synchronisation du portefeuille via la clé privée.
                   </p>
                 </div>
                 <input
-                  aria-label="Activer la synchronisation bancaire"
-                  defaultChecked
+                  aria-label="Activer la synchronisation multi-appareils"
                   type="checkbox"
+                  checked={settings.sync.enabled}
+                  onChange={(event) =>
+                    updateSettings(
+                      {
+                        sync: {
+                          ...settings.sync,
+                          enabled: event.target.checked,
+                        },
+                      },
+                      true
+                    )
+                  }
                   className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={isLoading}
                 />
@@ -393,6 +437,75 @@ export default function SettingsPage() {
                   disabled={isLoading}
                 />
               </label>
+              <div className="rounded-lg border border-border/60 p-3 md:col-span-2 space-y-3">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Clé de synchronisation</p>
+                    <p className="text-xs text-muted-foreground">
+                      Utilisée comme jeton d’authentification pour récupérer vos données sur un autre
+                      appareil.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generateSyncKey}
+                    disabled={isLoading || status === "saving"}
+                  >
+                    Générer une clé
+                  </Button>
+                </div>
+                <Input
+                  placeholder="Collez votre clé de synchronisation"
+                  value={settings.sync.key}
+                  onChange={(event) =>
+                    updateSettings({
+                      sync: {
+                        ...settings.sync,
+                        key: event.target.value,
+                      },
+                    })
+                  }
+                  onBlur={(event) =>
+                    updateSettings(
+                      {
+                        sync: {
+                          ...settings.sync,
+                          key: event.target.value,
+                        },
+                      },
+                      true
+                    )
+                  }
+                  disabled={isLoading}
+                />
+                <label className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Synchronisation automatique</p>
+                    <p className="text-xs text-muted-foreground">
+                      Envoie les mises à jour du portefeuille vers le serveur à chaque changement.
+                    </p>
+                  </div>
+                  <input
+                    aria-label="Activer la synchronisation automatique"
+                    type="checkbox"
+                    checked={settings.sync.autoSync}
+                    onChange={(event) =>
+                      updateSettings(
+                        {
+                          sync: {
+                            ...settings.sync,
+                            autoSync: event.target.checked,
+                          },
+                        },
+                        true
+                      )
+                    }
+                    className="h-4 w-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    disabled={isLoading}
+                  />
+                </label>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -15,8 +15,8 @@ interface BreadcrumbItem {
 
 export default function TopNav() {
   const breadcrumbs: BreadcrumbItem[] = [
-    { label: "Quantum Finance Dashboard", href: "#" },
-    { label: "Dashboard", href: "#" },
+    { label: "OpenNova Finance", href: "/dashboard" },
+    { label: "Tableau de bord", href: "/dashboard" },
   ]
   const criticalAlerts = ALERTS.filter((alert) => alert.status === "critique").length
 

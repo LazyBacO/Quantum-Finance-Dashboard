@@ -105,6 +105,7 @@ const requestSchema = z
     id: z.string().min(1).max(100).optional(),
     messages: z.array(messageSchema).min(1).max(60),
     portfolioData: portfolioSchema.optional(),
+    uiLocale: z.enum(["fr", "en"]).optional(),
   })
   .strict()
 
@@ -267,9 +268,14 @@ export async function POST(req: Request) {
     )
   }
 
-  const { messages, portfolioData } = parsedPayload.data
+  const { messages, portfolioData, uiLocale } = parsedPayload.data
   const portfolio: PortfolioData = portfolioData || DEFAULT_PORTFOLIO
   const summary = calculateSummary(portfolio.accounts)
+  const preferredLanguage = uiLocale === "en" ? "English" : "French"
+  const languageRule =
+    uiLocale === "en"
+      ? "Respond in English unless the user explicitly asks for another language."
+      : "Respond in French unless the user explicitly asks for another language."
 
   const systemPrompt = `You are an expert financial advisor AI agent integrated into the user's financial dashboard. You have access to their complete financial portfolio data and can provide personalized investment advice and proactive guidance.
 
@@ -305,7 +311,8 @@ ${portfolio.stockActions.map((a: StockAction) => `- ${a.symbol} ${a.action.toUpp
 6. Provide insights on spending patterns based on transactions
 
 ## Guidelines:
-- Respond in French unless the user explicitly asks for another language.
+- Preferred UI language: ${preferredLanguage}.
+- ${languageRule}
 - Be specific and refer to actual numbers from their portfolio
 - Provide actionable recommendations
 - Consider risk tolerance based on their current allocation

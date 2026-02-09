@@ -139,7 +139,7 @@ export interface PortfolioAlert {
   description: string
   category: "prix" | "cash buffer" | "drawdown"
   status: "actif" | "résolu" | "critique"
-  updatedAt: string
+  updatedAtIso: string
 }
 
 export interface PlanningScenario {
@@ -725,7 +725,7 @@ export const ALERTS: PortfolioAlert[] = [
     description: "NVDA a franchi le seuil de 15% de hausse sur 30 jours.",
     category: "prix",
     status: "actif",
-    updatedAt: "Il y a 10 min",
+    updatedAtIso: "2026-03-03T11:50:00.000Z",
   },
   {
     id: "cash-buffer",
@@ -733,7 +733,7 @@ export const ALERTS: PortfolioAlert[] = [
     description: "Le coussin de liquidités est à 18% (objectif 25%).",
     category: "cash buffer",
     status: "critique",
-    updatedAt: "Il y a 1 h 12",
+    updatedAtIso: "2026-03-03T10:48:00.000Z",
   },
   {
     id: "drawdown-alert",
@@ -741,7 +741,7 @@ export const ALERTS: PortfolioAlert[] = [
     description: "Le drawdown repasse sous -6% après rééquilibrage.",
     category: "drawdown",
     status: "résolu",
-    updatedAt: "Hier à 17:40",
+    updatedAtIso: "2026-03-02T17:40:00.000Z",
   },
 ]
 

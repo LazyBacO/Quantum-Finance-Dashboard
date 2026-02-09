@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils"
 import { usePortfolio } from "@/lib/portfolio-context"
 import { ArrowDownRight, TrendingDown, Wallet } from "lucide-react"
+import { formatRelativeTimestampFromIso } from "@/lib/portfolio-data"
 
 interface AlertsProps {
   className?: string
@@ -82,7 +83,7 @@ export default function Alerts({ className }: AlertsProps) {
                     <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                       <span>{meta.label}</span>
                       <span>•</span>
-                      <span>{alert.updatedAt}</span>
+                      <span>{formatRelativeTimestampFromIso(alert.updatedAtIso)}</span>
                     </div>
                   </div>
                 </div>

@@ -39,6 +39,8 @@ import {
   type PlanningScenario,
   type DiversificationBreakdown,
 } from "./portfolio-data"
+import { fetchRemotePortfolioState, pushRemotePortfolioState } from "./portfolio-sync-client"
+import { loadSettingsSnapshot } from "./settings-store"
 
 const STORAGE_KEYS = {
   STATE: "portfolio_state_v2",
@@ -153,8 +155,25 @@ const asLiteral = <T extends readonly string[]>(
 const asFiniteNumber = (value: unknown): number | undefined =>
   typeof value === "number" && Number.isFinite(value) ? value : undefined
 
-const createGeneratedId = (prefix: string, index: number) =>
-  `${prefix}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`
+const createUuid = () => {
+  if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.randomUUID === "function") {
+    return globalThis.crypto.randomUUID()
+  }
+
+  if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.getRandomValues === "function") {
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16))
+    bytes[6] = (bytes[6] & 0x0f) | 0x40
+    bytes[8] = (bytes[8] & 0x3f) | 0x80
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+
+  const randomA = Math.random().toString(36).slice(2, 10)
+  const randomB = Math.random().toString(36).slice(2, 10)
+  return `${randomA}-${randomB}`
+}
+
+const createGeneratedId = (prefix: string) => `${prefix}-${createUuid()}`
 
 const parseLegacyRelativeDateTime = (value: string): string | null => {
   const match = value.match(/^(today|yesterday),\s*(\d{1,2}):(\d{2})\s*(am|pm)$/i)
@@ -220,7 +239,7 @@ const normalizeAccounts = (raw: unknown): AccountItem[] | null => {
   return raw.map((entry, index) => {
     const fallback = DEFAULT_ACCOUNTS[index] ?? DEFAULT_ACCOUNTS[0]
     if (!entry || typeof entry !== "object") {
-      return { ...fallback, id: createGeneratedId("account", index) }
+      return { ...fallback, id: createGeneratedId("account") }
     }
 
     const account = entry as Partial<
@@ -239,7 +258,7 @@ const normalizeAccounts = (raw: unknown): AccountItem[] | null => {
         : fallback.balanceCents
 
     return {
-      id: asString(account.id) ?? createGeneratedId("account", index),
+      id: asString(account.id) ?? createGeneratedId("account"),
       title: asString(account.title) ?? fallback.title,
       description: typeof account.description === "string" ? account.description : fallback.description,
       balanceCents,
@@ -253,7 +272,7 @@ const normalizeTransactions = (raw: unknown): Transaction[] | null => {
   return raw.map((entry, index) => {
     const fallback = DEFAULT_TRANSACTIONS[index] ?? DEFAULT_TRANSACTIONS[0]
     if (!entry || typeof entry !== "object") {
-      return { ...fallback, id: createGeneratedId("transaction", index) }
+      return { ...fallback, id: createGeneratedId("transaction") }
     }
 
     const transaction = entry as Partial<
@@ -278,7 +297,7 @@ const normalizeTransactions = (raw: unknown): Transaction[] | null => {
     )
 
     return {
-      id: asString(transaction.id) ?? createGeneratedId("transaction", index),
+      id: asString(transaction.id) ?? createGeneratedId("transaction"),
       title: asString(transaction.title) ?? fallback.title,
       amountCents,
       type: asLiteral(transaction.type, TRANSACTION_TYPES, fallback.type),
@@ -294,7 +313,7 @@ const normalizeGoals = (raw: unknown): FinancialGoal[] | null => {
   return raw.map((entry, index) => {
     const fallback = DEFAULT_GOALS[index] ?? DEFAULT_GOALS[0]
     if (!entry || typeof entry !== "object") {
-      return { ...fallback, id: createGeneratedId("goal", index) }
+      return { ...fallback, id: createGeneratedId("goal") }
     }
 
     const goal = entry as Partial<
@@ -318,7 +337,7 @@ const normalizeGoals = (raw: unknown): FinancialGoal[] | null => {
     const progress = progressCandidate === undefined ? fallback.progress : Math.max(0, Math.min(100, progressCandidate))
 
     return {
-      id: asString(goal.id) ?? createGeneratedId("goal", index),
+      id: asString(goal.id) ?? createGeneratedId("goal"),
       title: asString(goal.title) ?? fallback.title,
       subtitle: asString(goal.subtitle) ?? fallback.subtitle,
       iconStyle: asString(goal.iconStyle) ?? fallback.iconStyle,
@@ -335,7 +354,7 @@ const normalizeStockActions = (raw: unknown): StockAction[] | null => {
   return raw.map((entry, index) => {
     const fallback = DEFAULT_STOCK_ACTIONS[index] ?? DEFAULT_STOCK_ACTIONS[0]
     if (!entry || typeof entry !== "object") {
-      return { ...fallback, id: createGeneratedId("stock-action", index) }
+      return { ...fallback, id: createGeneratedId("stock-action") }
     }
 
     const action = entry as Partial<
@@ -358,7 +377,7 @@ const normalizeStockActions = (raw: unknown): StockAction[] | null => {
     const tradeDateIso = parseDateToIso(action.tradeDateIso ?? action.tradeDate, fallback.tradeDateIso)
 
     return {
-      id: asString(action.id) ?? createGeneratedId("stock-action", index),
+      id: asString(action.id) ?? createGeneratedId("stock-action"),
       symbol: (asString(action.symbol) ?? fallback.symbol).toUpperCase(),
       action: asLiteral(action.action, STOCK_ACTION_TYPES, fallback.action),
       shares: sharesValue,
@@ -490,6 +509,11 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<FinancialGoal[]>(DEFAULT_GOALS)
   const [stockActions, setStockActions] = useState<StockAction[]>(DEFAULT_STOCK_ACTIONS)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
+  const [syncEnabled, setSyncEnabled] = useState(false)
+  const [syncAuto, setSyncAuto] = useState(true)
+  const [syncKey, setSyncKey] = useState("")
+  const [syncBootstrappedKey, setSyncBootstrappedKey] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = loadPortfolioState()
@@ -499,12 +523,15 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       setGoals(stored.goals ?? DEFAULT_GOALS)
       setStockActions(stored.stockActions ?? DEFAULT_STOCK_ACTIONS)
       setLastSaved(stored.lastSaved ?? new Date().toISOString())
+      setIsHydrated(true)
       return
     }
     setLastSaved(canUseStorage() ? window.localStorage.getItem(STORAGE_KEYS.LAST_SAVED) : null)
+    setIsHydrated(true)
   }, [])
 
   useEffect(() => {
+    if (!isHydrated) return
     const savedAt = new Date().toISOString()
     const state: PortfolioStateV2 = {
       version: 2,
@@ -516,12 +543,134 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     }
     savePortfolioState(state)
     setLastSaved(savedAt)
-  }, [accounts, transactions, goals, stockActions])
+  }, [accounts, transactions, goals, stockActions, isHydrated])
+
+  useEffect(() => {
+    const readSyncSettings = () => {
+      const settings = loadSettingsSnapshot()
+      setSyncEnabled(Boolean(settings.sync.enabled))
+      setSyncAuto(Boolean(settings.sync.autoSync))
+      setSyncKey(settings.sync.key.trim())
+    }
+
+    readSyncSettings()
+    const intervalId = window.setInterval(readSyncSettings, 2_500)
+    const onStorage = () => {
+      readSyncSettings()
+    }
+
+    window.addEventListener("storage", onStorage)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener("storage", onStorage)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isHydrated || !syncEnabled || syncKey.length < 16 || syncBootstrappedKey === syncKey) {
+      return
+    }
+
+    let isCancelled = false
+    const syncInitialState = async () => {
+      const localState: PortfolioStateV2 = {
+        version: 2,
+        accounts,
+        transactions,
+        goals,
+        stockActions,
+        lastSaved: lastSaved ?? new Date().toISOString(),
+      }
+
+      try {
+        const remoteState = await fetchRemotePortfolioState(syncKey)
+        if (isCancelled) return
+
+        if (!remoteState) {
+          await pushRemotePortfolioState(syncKey, localState)
+          if (!isCancelled) {
+            setSyncBootstrappedKey(syncKey)
+          }
+          return
+        }
+
+        const remoteSavedAt = new Date(remoteState.lastSaved).getTime()
+        const localSavedAt = new Date(localState.lastSaved).getTime()
+
+        if (Number.isFinite(remoteSavedAt) && remoteSavedAt > localSavedAt) {
+          setAccounts(remoteState.accounts)
+          setTransactions(remoteState.transactions)
+          setGoals(remoteState.goals)
+          setStockActions(remoteState.stockActions)
+          setLastSaved(remoteState.lastSaved)
+        } else {
+          await pushRemotePortfolioState(syncKey, localState)
+        }
+
+        if (!isCancelled) {
+          setSyncBootstrappedKey(syncKey)
+        }
+      } catch (error) {
+        console.warn("Unable to initialize portfolio synchronization:", error)
+      }
+    }
+
+    void syncInitialState()
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    isHydrated,
+    syncEnabled,
+    syncKey,
+    syncBootstrappedKey,
+    accounts,
+    transactions,
+    goals,
+    stockActions,
+    lastSaved,
+  ])
+
+  useEffect(() => {
+    if (
+      !isHydrated ||
+      !syncEnabled ||
+      !syncAuto ||
+      syncKey.length < 16 ||
+      syncBootstrappedKey !== syncKey
+    ) {
+      return
+    }
+
+    const state: PortfolioStateV2 = {
+      version: 2,
+      accounts,
+      transactions,
+      goals,
+      stockActions,
+      lastSaved: lastSaved ?? new Date().toISOString(),
+    }
+
+    void pushRemotePortfolioState(syncKey, state).catch((error) => {
+      console.warn("Unable to sync portfolio state:", error)
+    })
+  }, [
+    isHydrated,
+    syncEnabled,
+    syncAuto,
+    syncKey,
+    syncBootstrappedKey,
+    accounts,
+    transactions,
+    goals,
+    stockActions,
+    lastSaved,
+  ])
 
   const addAccount = useCallback((account: Omit<AccountItem, "id">) => {
     const newAccount: AccountItem = {
       ...account,
-      id: createGeneratedId("account", 0),
+      id: createGeneratedId("account"),
     }
     setAccounts((prev) => [...prev, newAccount])
   }, [])
@@ -564,7 +713,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const addTransaction = useCallback((transaction: Omit<Transaction, "id">) => {
     const newTransaction: Transaction = {
       ...transaction,
-      id: createGeneratedId("transaction", 0),
+      id: createGeneratedId("transaction"),
     }
     setTransactions((prev) => [newTransaction, ...prev])
   }, [])
@@ -584,7 +733,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const addGoal = useCallback((goal: Omit<FinancialGoal, "id">) => {
     const newGoal: FinancialGoal = {
       ...goal,
-      id: createGeneratedId("goal", 0),
+      id: createGeneratedId("goal"),
     }
     setGoals((prev) => [...prev, newGoal])
   }, [])
@@ -602,7 +751,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const addStockAction = useCallback((action: Omit<StockAction, "id">) => {
     const newAction: StockAction = {
       ...action,
-      id: createGeneratedId("stock-action", 0),
+      id: createGeneratedId("stock-action"),
     }
     setStockActions((prev) => [newAction, ...prev])
   }, [])

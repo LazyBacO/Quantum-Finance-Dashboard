@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { Bot, Send, User, Sparkles, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
 import { useRef, useEffect, useState } from "react"
 import { usePortfolio } from "@/lib/portfolio-context"
+import { loadSettingsSnapshot } from "@/lib/settings-store"
 
 interface AIAdvisorProps {
   className?: string
@@ -16,9 +17,23 @@ interface AIAdvisorProps {
 export default function AIAdvisor({ className }: AIAdvisorProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [input, setInput] = useState("")
+  const [uiLocale, setUiLocale] = useState<"fr" | "en">("fr")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const modelLabel = process.env.NEXT_PUBLIC_OPENAI_MODEL_LABEL || "GPT-5.3-Codex"
   const { accounts, transactions, goals, totalBalance, stockActions } = usePortfolio()
+
+  useEffect(() => {
+    const syncLocale = () => {
+      const snapshot = loadSettingsSnapshot()
+      setUiLocale(snapshot.language === "en" ? "en" : "fr")
+    }
+
+    syncLocale()
+    const intervalId = window.setInterval(syncLocale, 2_500)
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
@@ -34,6 +49,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
             stockActions,
             totalBalance,
           },
+          uiLocale,
         },
       }),
     }),
@@ -60,12 +76,36 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
     setMessages([])
   }
 
-  const suggestedQuestions = [
-    "How can I optimize my portfolio?",
-    "Am I saving enough for emergencies?",
-    "How should I pay off my debt?",
-    "Analyze my spending patterns",
-  ]
+  const copy =
+    uiLocale === "en"
+      ? {
+          title: "AI Financial Advisor",
+          subtitle: "Global control, instant insights, and guided execution.",
+          clearTitle: "Clear chat",
+          emptyTitle: "I monitor your finances and operations.",
+          emptyDesc: "I can use your full portfolio data to guide your next actions.",
+          inputPlaceholder: "Ask about your portfolio...",
+          suggestions: [
+            "How can I optimize my portfolio?",
+            "Am I saving enough for emergencies?",
+            "How should I pay off my debt?",
+            "Analyze my spending patterns",
+          ],
+        }
+      : {
+          title: "Conseiller Financier IA",
+          subtitle: "Pilotage global, insights instantanés et exécution guidée.",
+          clearTitle: "Vider la conversation",
+          emptyTitle: "Je supervise vos finances et vos opérations.",
+          emptyDesc: "J’utilise vos données de portefeuille pour guider vos décisions.",
+          inputPlaceholder: "Posez une question sur votre portefeuille...",
+          suggestions: [
+            "Comment optimiser mon portefeuille ?",
+            "Mon épargne de précaution est-elle suffisante ?",
+            "Quelle stratégie pour rembourser mes dettes ?",
+            "Analyse mes dépenses récentes",
+          ],
+        }
 
   // Helper to extract text from message parts
   const getMessageText = (message: typeof messages[0]): string => {
@@ -100,11 +140,9 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
             <Bot className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">AI Financial Advisor</h2>
+            <h2 className="text-sm font-semibold text-foreground">{copy.title}</h2>
             <p className="text-xs text-muted-foreground">Powered by {modelLabel}</p>
-            <p className="text-xs text-muted-foreground">
-              Contrôle global, insights instantanés et exécution guidée.
-            </p>
+            <p className="text-xs text-muted-foreground">{copy.subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -116,7 +154,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
                 handleClearChat()
               }}
               className="p-1.5 rounded-lg hover:bg-accent/60 transition-colors"
-              title="Clear chat"
+              title={copy.clearTitle}
             >
               <RefreshCw className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -140,14 +178,14 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Je supervise vos finances et vos opérations
+                    {copy.emptyTitle}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    J’ai accès aux données complètes du portefeuille pour tout piloter.
+                    {copy.emptyDesc}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {suggestedQuestions.map((question) => (
+                  {copy.suggestions.map((question) => (
                     <button
                       key={question}
                       type="button"
@@ -234,7 +272,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about your portfolio..."
+                placeholder={copy.inputPlaceholder}
                 disabled={isLoading}
                 className={cn(
                   "flex-1 px-3 py-2 rounded-lg",
