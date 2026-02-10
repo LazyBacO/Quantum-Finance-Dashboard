@@ -1,6 +1,7 @@
 import { promises as fs } from "fs"
 import path from "path"
-import { prefetchMassiveQuotes } from "@/lib/massive-market-data"
+import type { MarketDataRequestConfig } from "@/lib/market-data-config"
+import { prefetchPreferredMarketQuotes } from "@/lib/market-data-router"
 import { buildTradingRiskSnapshot } from "@/lib/trading-risk"
 import {
   buildAccountSummary,
@@ -165,16 +166,23 @@ export const writeTradingStore = async (store: PaperTradingStore) => {
   await fs.writeFile(DATA_PATH, JSON.stringify(normalized, null, 2), "utf-8")
 }
 
-export const getTradingOverview = async (): Promise<PaperTradingOverview> => {
+export const getTradingOverview = async (
+  marketDataConfig?: MarketDataRequestConfig
+): Promise<PaperTradingOverview> => {
   const store = await readTradingStore()
   const symbols = store.positions.map((position) => position.symbol)
-  await prefetchMassiveQuotes(symbols).catch(() => {
+  await prefetchPreferredMarketQuotes(symbols, marketDataConfig).catch(() => {
     // fallback is handled in trading-engine
   })
   const positions = store.positions
-    .map((position) => computePositionWithMarket(position))
+    .map((position) => computePositionWithMarket(position, marketDataConfig))
     .sort((a, b) => Math.abs(b.marketValueCents) - Math.abs(a.marketValueCents))
-  const account = buildAccountSummary(store.cashCents, store.realizedPnlCents, store.positions)
+  const account = buildAccountSummary(
+    store.cashCents,
+    store.realizedPnlCents,
+    store.positions,
+    marketDataConfig
+  )
   const risk = buildTradingRiskSnapshot(store, account)
 
   return {
@@ -193,11 +201,11 @@ export const listTradingOrders = async () => {
 
 export const placeTradingOrder = async (
   input: PaperOrderInput,
-  options?: { idempotencyKey?: string; source?: OrderSource }
+  options?: { idempotencyKey?: string; source?: OrderSource; marketDataConfig?: MarketDataRequestConfig }
 ) => {
   const parsed = paperOrderInputSchema.parse(input)
   const store = await readTradingStore()
-  await prefetchMassiveQuotes([parsed.symbol]).catch(() => {
+  await prefetchPreferredMarketQuotes([parsed.symbol], options?.marketDataConfig).catch(() => {
     // fallback is handled in trading-engine
   })
   const idempotencyKey = options?.idempotencyKey?.trim()
@@ -217,11 +225,20 @@ export const placeTradingOrder = async (
   }
 
   const source = options?.source ?? "api"
-  const result = executePaperOrder(store, parsed, { idempotencyKey, source })
+  const result = executePaperOrder(store, parsed, {
+    idempotencyKey,
+    source,
+    marketDataConfig: options?.marketDataConfig,
+  })
   const nextStore = appendEquityPoint(result.store)
   await writeTradingStore(nextStore)
 
-  const account = buildAccountSummary(nextStore.cashCents, nextStore.realizedPnlCents, nextStore.positions)
+  const account = buildAccountSummary(
+    nextStore.cashCents,
+    nextStore.realizedPnlCents,
+    nextStore.positions,
+    options?.marketDataConfig
+  )
   const risk = buildTradingRiskSnapshot(nextStore, account)
   await appendAuditEvent({
     ts: new Date().toISOString(),
@@ -272,15 +289,21 @@ export const updateTradingPolicy = async (updates: PaperTradingPolicyUpdate): Pr
   return nextStore.policy
 }
 
-export const getTradingQuotes = async (symbols: string[]) => {
+export const getTradingQuotes = async (
+  symbols: string[],
+  marketDataConfig?: MarketDataRequestConfig
+) => {
   const cleanSymbols = symbols.map((symbol) => normalizeSymbol(symbol)).filter((symbol) => symbol.length > 0)
   if (cleanSymbols.length === 0) {
     return []
   }
-  await prefetchMassiveQuotes(cleanSymbols).catch(() => {
+  await prefetchPreferredMarketQuotes(cleanSymbols, marketDataConfig).catch(() => {
     // fallback is handled in trading-engine
   })
 
-  const quotes = cleanSymbols.length === 1 ? [getPaperQuote(cleanSymbols[0])] : getPaperQuotes(cleanSymbols)
+  const quotes =
+    cleanSymbols.length === 1
+      ? [getPaperQuote(cleanSymbols[0], marketDataConfig)]
+      : getPaperQuotes(cleanSymbols, marketDataConfig)
   return quotes
 }

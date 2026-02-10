@@ -1,4 +1,5 @@
 import type { FundamentalMetrics } from "@/lib/stock-analysis-engine"
+import type { MarketDataRequestConfig } from "@/lib/market-data-config"
 
 export type MassiveMarketStatus = "live" | "delayed"
 
@@ -51,15 +52,18 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const round2 = (value: number) => Number(value.toFixed(2))
 
-const getApiKey = () => {
+const getApiKey = (config?: MarketDataRequestConfig) => {
+  const override = config?.massiveApiKey?.trim()
+  if (override) return override
+
   const key = process.env.MASSIVE_API_KEY || process.env.POLYGON_API_KEY
   return key && key.trim().length > 0 ? key.trim() : null
 }
 
-export const isMassiveLiveModeEnabled = () => {
+export const isMassiveLiveModeEnabled = (config?: MarketDataRequestConfig) => {
   const enabled = process.env.MASSIVE_LIVE_DATA
   if (enabled?.toLowerCase() === "false") return false
-  return Boolean(getApiKey())
+  return Boolean(getApiKey(config))
 }
 
 const getBaseUrl = () => process.env.MASSIVE_API_BASE_URL?.trim() || DEFAULT_BASE_URL
@@ -92,9 +96,10 @@ const readPathNumber = (value: unknown, path: string[]) => {
 
 const fetchMassiveJson = async <T>(
   path: string,
-  params?: Record<string, string | number | boolean>
+  params?: Record<string, string | number | boolean>,
+  config?: MarketDataRequestConfig
 ): Promise<T> => {
-  const apiKey = getApiKey()
+  const apiKey = getApiKey(config)
   if (!apiKey) {
     throw new Error("Massive API key is not configured.")
   }
@@ -146,8 +151,11 @@ export const getCachedMassiveQuote = (symbolInput: string) => {
   return cached.priceCents
 }
 
-export async function prefetchMassiveQuotes(symbolsInput: string[]) {
-  if (!isMassiveLiveModeEnabled()) return
+export async function prefetchMassiveQuotes(
+  symbolsInput: string[],
+  config?: MarketDataRequestConfig
+) {
+  if (!isMassiveLiveModeEnabled(config)) return
 
   const now = Date.now()
   const symbols = Array.from(new Set(symbolsInput.map(toUpperSymbol).filter(Boolean)))
@@ -165,7 +173,7 @@ export async function prefetchMassiveQuotes(symbolsInput: string[]) {
       const response = await fetchMassiveJson<{
         status?: string
         results?: Array<{ c?: number; t?: number }>
-      }>(`/v2/aggs/ticker/${symbol}/prev`, { adjusted: true })
+      }>(`/v2/aggs/ticker/${symbol}/prev`, { adjusted: true }, config)
 
       const close = getNumeric(response.results?.[0]?.c)
       const timestamp = getNumeric(response.results?.[0]?.t)
@@ -233,7 +241,10 @@ const getGrowthRate = (latestFinancial: unknown, previousFinancial: unknown) => 
   return round2(clamp(((latestRevenue - previousRevenue) / previousRevenue) * 100, -300, 300))
 }
 
-const fetchMassiveFundamentals = async (symbolInput: string) => {
+const fetchMassiveFundamentals = async (
+  symbolInput: string,
+  config?: MarketDataRequestConfig
+) => {
   const symbol = toUpperSymbol(symbolInput)
   const now = Date.now()
   const cached = financialCache.get(symbol)
@@ -242,13 +253,17 @@ const fetchMassiveFundamentals = async (symbolInput: string) => {
   }
 
   const [referenceResult, financialResult] = await Promise.allSettled([
-    fetchMassiveJson<{ results?: { market_cap?: number } }>(`/v3/reference/tickers/${symbol}`),
+    fetchMassiveJson<{ results?: { market_cap?: number } }>(
+      `/v3/reference/tickers/${symbol}`,
+      undefined,
+      config
+    ),
     fetchMassiveJson<{ results?: Array<{ financials?: unknown }> }>(`/vX/reference/financials`, {
       ticker: symbol,
       timeframe: "annual",
       limit: 2,
       sort: "period_of_report_date",
-    }),
+    }, config),
   ])
 
   const marketCap =
@@ -282,8 +297,11 @@ const fetchMassiveFundamentals = async (symbolInput: string) => {
   return payload
 }
 
-export async function fetchMassiveAnalysisContext(symbolInput: string): Promise<MassiveAnalysisContext | null> {
-  if (!isMassiveLiveModeEnabled()) return null
+export async function fetchMassiveAnalysisContext(
+  symbolInput: string,
+  config?: MarketDataRequestConfig
+): Promise<MassiveAnalysisContext | null> {
+  if (!isMassiveLiveModeEnabled(config)) return null
 
   const symbol = toUpperSymbol(symbolInput)
   const now = Date.now()
@@ -304,7 +322,7 @@ export async function fetchMassiveAnalysisContext(symbolInput: string): Promise<
       adjusted: true,
       sort: "asc",
       limit: 5000,
-    })
+    }, config)
 
     const bars = (rangeResponse.results ?? []).filter(
       (bar): bar is { c: number; h: number; l: number; v: number; t: number } =>
@@ -332,7 +350,7 @@ export async function fetchMassiveAnalysisContext(symbolInput: string): Promise<
     const avgVolume =
       volumeWindow.reduce((sum, bar) => sum + bar.v, 0) / Math.max(1, volumeWindow.length)
 
-    const fundamentalsSnapshot = await fetchMassiveFundamentals(symbol).catch(() => null)
+    const fundamentalsSnapshot = await fetchMassiveFundamentals(symbol, config).catch(() => null)
 
     const context: MassiveAnalysisContext = {
       symbol,

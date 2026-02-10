@@ -13,7 +13,8 @@ import {
   type StockAnalysisReport,
   type StockPrice,
 } from "@/lib/stock-analysis-engine"
-import { fetchMassiveAnalysisContext } from "@/lib/massive-market-data"
+import { parseMarketDataRequestHeaders, type MarketDataRequestConfig } from "@/lib/market-data-config"
+import { fetchPreferredMarketAnalysisContext } from "@/lib/market-data-router"
 
 const analyzeStockRequestSchema = z.object({
   symbol: z.string().min(1).max(10),
@@ -42,15 +43,17 @@ const localeSchema = z.enum(["fr", "en"]).default("fr")
 
 const toPricePayload = async (
   symbol: string,
-  data: z.infer<typeof analyzeStockRequestSchema>
+  data: z.infer<typeof analyzeStockRequestSchema>,
+  marketDataConfig: MarketDataRequestConfig
 ): Promise<{
   prices: StockPrice
   fundamentals: FundamentalMetrics
   priceHistory: number[]
-  dataSource: "massive-live" | "massive-delayed" | "synthetic"
+  dataSource: "twelvedata-live" | "massive-live" | "massive-delayed" | "synthetic"
 }> => {
   const synthetic = generateSyntheticMarketSnapshot(symbol, data.currentPrice)
-  const liveContext = await fetchMassiveAnalysisContext(symbol)
+  const preferredContext = await fetchPreferredMarketAnalysisContext(symbol, marketDataConfig)
+  const liveContext = preferredContext?.context
 
   const current = data.currentPrice ?? liveContext?.currentPrice ?? synthetic.currentPrice
   const high52week = data.high52week ?? liveContext?.high52week ?? synthetic.high52week
@@ -91,7 +94,7 @@ const toPricePayload = async (
     prices,
     fundamentals,
     priceHistory,
-    dataSource: liveContext ? (liveContext.status === "delayed" ? "massive-delayed" : "massive-live") : "synthetic",
+    dataSource: preferredContext?.source ?? "synthetic",
   }
 }
 
@@ -150,7 +153,12 @@ export const POST = async (request: Request) => {
   }
 
   const symbol = parsed.data.symbol.trim().toUpperCase()
-  const { prices, fundamentals, priceHistory, dataSource } = await toPricePayload(symbol, parsed.data)
+  const marketDataConfig = parseMarketDataRequestHeaders(request)
+  const { prices, fundamentals, priceHistory, dataSource } = await toPricePayload(
+    symbol,
+    parsed.data,
+    marketDataConfig
+  )
   const technical = calculateTechnicalIndicators(priceHistory, prices.current)
   const recommendation = analyzeStock(symbol, prices, technical, fundamentals)
 

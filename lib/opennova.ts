@@ -77,6 +77,33 @@ export {
   type MassiveMarketStatus,
 } from "@/lib/massive-market-data"
 
+// TwelveData Market Data
+export {
+  fetchTwelveDataAnalysisContext,
+  getCachedTwelveDataQuote,
+  prefetchTwelveDataQuotes,
+  isTwelveDataLiveModeEnabled,
+  type TwelveDataAnalysisContext,
+  type TwelveDataMarketStatus,
+} from "@/lib/twelvedata-market-data"
+
+// Market Data Routing & Config
+export {
+  DEFAULT_MARKET_DATA_PROVIDER,
+  normalizeMarketProvider,
+  normalizeMarketDataRequestConfig,
+  parseMarketDataRequestHeaders,
+  type MarketDataProvider,
+  type MarketDataRequestConfig,
+} from "@/lib/market-data-config"
+export {
+  fetchPreferredMarketAnalysisContext,
+  getCachedPreferredMarketQuote,
+  prefetchPreferredMarketQuotes,
+  type MarketAnalysisContext,
+  type MarketDataSource,
+} from "@/lib/market-data-router"
+
 // Client Helpers
 export {
   analyzeStock as clientAnalyzeStock,

@@ -86,7 +86,15 @@ MASSIVE_API_KEY=your_massive_api_key
 MASSIVE_LIVE_DATA=true
 MASSIVE_API_BASE_URL=https://api.massive.com
 MASSIVE_HTTP_TIMEOUT_MS=8000
+
+# Optionnel (active les cotations temps reel via TwelveData)
+TWELVEDATA_API_KEY=your_twelvedata_api_key
+TWELVEDATA_LIVE_DATA=true
+TWELVEDATA_API_BASE_URL=https://api.twelvedata.com
+TWELVEDATA_HTTP_TIMEOUT_MS=8000
 ```
+
+Astuce: depuis `Settings > Donnees de marche`, l'utilisateur peut remplacer les cles Massive et TwelveData a tout moment sans modifier le code.
 
 ### 3) Lancer l'application
 
@@ -155,6 +163,10 @@ Application accessible sur `http://localhost:3000` (redirection vers `/dashboard
 | `MASSIVE_LIVE_DATA` | Non | Active/desactive le mode live (`true` par defaut si cle presente) |
 | `MASSIVE_API_BASE_URL` | Non | URL API Massive (defaut: `https://api.massive.com`) |
 | `MASSIVE_HTTP_TIMEOUT_MS` | Non | Timeout HTTP pour appels Massive |
+| `TWELVEDATA_API_KEY` | Non | Cle TwelveData pour cotations temps reel |
+| `TWELVEDATA_LIVE_DATA` | Non | Active/desactive la source TwelveData |
+| `TWELVEDATA_API_BASE_URL` | Non | URL API TwelveData (defaut: `https://api.twelvedata.com`) |
+| `TWELVEDATA_HTTP_TIMEOUT_MS` | Non | Timeout HTTP pour appels TwelveData |
 
 ## API utiles
 

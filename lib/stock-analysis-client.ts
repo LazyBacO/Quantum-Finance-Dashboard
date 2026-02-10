@@ -1,4 +1,5 @@
 import type { StockAction } from "@/lib/portfolio-data"
+import { buildMarketDataHeaders } from "@/lib/market-data-client"
 import {
   generateSyntheticMarketSnapshot,
   type StockAnalysisReport,
@@ -41,6 +42,7 @@ export interface StockAnalysisResponse {
     report: StockAnalysisReport
     recommendation: StockAIRecommendation
     summary: string
+    dataSource?: "twelvedata-live" | "massive-live" | "massive-delayed" | "synthetic"
     entryId?: string
     entry?: {
       id: string
@@ -68,7 +70,15 @@ export interface StockIntelligenceContext {
 }
 
 const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Promise<T> => {
-  const response = await fetch(input, init)
+  const headers = new Headers(init?.headers ?? {})
+  const marketDataHeaders = buildMarketDataHeaders()
+  if (marketDataHeaders && typeof marketDataHeaders === "object") {
+    for (const [key, value] of Object.entries(marketDataHeaders as Record<string, string>)) {
+      headers.set(key, value)
+    }
+  }
+
+  const response = await fetch(input, { ...init, headers })
   const payload = (await response.json()) as T
   if (!response.ok) {
     throw payload
@@ -109,7 +119,10 @@ export async function analyzeStock(request: StockAnalysisRequest): Promise<Stock
 
     return await fetchJson<StockAnalysisResponse>("/api/stock-analysis", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(buildMarketDataHeaders() as Record<string, string>),
+      },
       body: JSON.stringify(mergedPayload),
     })
   } catch (error) {

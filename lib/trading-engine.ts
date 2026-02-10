@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto"
-import { getCachedMassiveQuote } from "@/lib/massive-market-data"
+import type { MarketDataRequestConfig } from "@/lib/market-data-config"
+import { getCachedPreferredMarketQuote } from "@/lib/market-data-router"
 import { buildTradingRiskSnapshot, isRiskIncreasingOrder } from "@/lib/trading-risk"
 import {
   paperOrderSchema,
@@ -39,15 +40,18 @@ const hashSymbol = (symbol: string) => {
 
 export const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase()
 
-export const getPaperQuote = (symbolInput: string): PaperQuote => {
+export const getPaperQuote = (
+  symbolInput: string,
+  marketDataConfig?: MarketDataRequestConfig
+): PaperQuote => {
   const symbol = normalizeSymbol(symbolInput)
-  const cachedMassive = getCachedMassiveQuote(symbol)
-  const base = cachedMassive ?? BASE_QUOTES_CENTS[symbol] ?? (500 + (hashSymbol(symbol) % 200000))
+  const cachedQuote = getCachedPreferredMarketQuote(symbol, marketDataConfig)
+  const base = cachedQuote ?? BASE_QUOTES_CENTS[symbol] ?? (500 + (hashSymbol(symbol) % 200000))
   const now = new Date()
   const minuteBucket = Math.floor(now.getTime() / 60_000)
   const microDrift = ((hashSymbol(`${symbol}-${minuteBucket}`) % 300) - 150) / 10_000
   const priceCents =
-    cachedMassive !== null
+    cachedQuote !== null
       ? Math.max(1, Math.round(base))
       : Math.max(1, Math.round(base * (1 + microDrift)))
 
@@ -58,13 +62,19 @@ export const getPaperQuote = (symbolInput: string): PaperQuote => {
   }
 }
 
-export const getPaperQuotes = (symbols: string[]): PaperQuote[] => {
+export const getPaperQuotes = (
+  symbols: string[],
+  marketDataConfig?: MarketDataRequestConfig
+): PaperQuote[] => {
   const unique = Array.from(new Set(symbols.map(normalizeSymbol).filter((symbol) => symbol.length > 0)))
-  return unique.map((symbol) => getPaperQuote(symbol))
+  return unique.map((symbol) => getPaperQuote(symbol, marketDataConfig))
 }
 
-export const computePositionWithMarket = (position: PaperPosition): PaperPositionWithMarket => {
-  const quote = getPaperQuote(position.symbol)
+export const computePositionWithMarket = (
+  position: PaperPosition,
+  marketDataConfig?: MarketDataRequestConfig
+): PaperPositionWithMarket => {
+  const quote = getPaperQuote(position.symbol, marketDataConfig)
   const marketValueCents = Math.round(position.quantity * quote.priceCents)
   const bookCostCents = Math.round(position.quantity * position.avgPriceCents)
 
@@ -79,9 +89,10 @@ export const computePositionWithMarket = (position: PaperPosition): PaperPositio
 export const buildAccountSummary = (
   cashCents: number,
   realizedPnlCents: number,
-  positions: PaperPosition[]
+  positions: PaperPosition[],
+  marketDataConfig?: MarketDataRequestConfig
 ): PaperAccountSummary => {
-  const enriched = positions.map((position) => computePositionWithMarket(position))
+  const enriched = positions.map((position) => computePositionWithMarket(position, marketDataConfig))
   const positionsValueCents = enriched.reduce((sum, position) => sum + position.marketValueCents, 0)
   const equityCents = cashCents + positionsValueCents
 
@@ -129,7 +140,8 @@ const validateOrder = (
   store: PaperTradingStore,
   input: PaperOrderInput,
   executionPriceCents: number,
-  account: PaperAccountSummary
+  account: PaperAccountSummary,
+  marketDataConfig?: MarketDataRequestConfig
 ): string | null => {
   const symbol = normalizeSymbol(input.symbol)
   const riskSnapshot = buildTradingRiskSnapshot(store, account)
@@ -174,7 +186,7 @@ const validateOrder = (
     return "Ordre rejeté: vente supérieure à la position disponible."
   }
 
-  const quoteForRisk = getPaperQuote(symbol)
+  const quoteForRisk = getPaperQuote(symbol, marketDataConfig)
   const resultingNotional = Math.abs(resultingQty) * quoteForRisk.priceCents
   const positionPct = account.equityCents > 0 ? (resultingNotional / account.equityCents) * 100 : 100
 
@@ -305,20 +317,25 @@ const applyFill = (store: PaperTradingStore, input: PaperOrderInput, executionPr
 export const executePaperOrder = (
   store: PaperTradingStore,
   rawInput: PaperOrderInput,
-  options?: { idempotencyKey?: string; source?: OrderSource }
+  options?: { idempotencyKey?: string; source?: OrderSource; marketDataConfig?: MarketDataRequestConfig }
 ): { store: PaperTradingStore; order: PaperOrder } => {
   const input: PaperOrderInput = {
     ...rawInput,
     symbol: normalizeSymbol(rawInput.symbol),
   }
 
-  const quote = getPaperQuote(input.symbol)
+  const quote = getPaperQuote(input.symbol, options?.marketDataConfig)
   const execution = evaluateExecutionPrice(input, quote.priceCents)
-  const account = buildAccountSummary(store.cashCents, store.realizedPnlCents, store.positions)
+  const account = buildAccountSummary(
+    store.cashCents,
+    store.realizedPnlCents,
+    store.positions,
+    options?.marketDataConfig
+  )
 
   const rejection =
     execution.executable
-      ? validateOrder(store, input, execution.executionPriceCents, account)
+      ? validateOrder(store, input, execution.executionPriceCents, account, options?.marketDataConfig)
       : execution.reason
 
   if (rejection) {

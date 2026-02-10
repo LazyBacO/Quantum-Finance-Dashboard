@@ -118,7 +118,11 @@ describe("/api/trading/orders", () => {
     expect(response.headers.get("Idempotency-Key")).toBe("idem-123")
     expect(mocks.placeTradingOrder).toHaveBeenCalledWith(
       expect.objectContaining({ symbol: "MSFT", side: "buy", quantity: 1, type: "market" }),
-      { idempotencyKey: "idem-123", source: "ai" }
+      expect.objectContaining({
+        idempotencyKey: "idem-123",
+        source: "ai",
+        marketDataConfig: expect.objectContaining({ provider: "auto" }),
+      })
     )
   })
 })

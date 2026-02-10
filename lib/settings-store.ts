@@ -1,3 +1,9 @@
+import {
+  DEFAULT_MARKET_DATA_PROVIDER,
+  normalizeMarketProvider,
+  type MarketDataProvider,
+} from "@/lib/market-data-config"
+
 export type SettingsData = {
   name: string
   email: string
@@ -14,6 +20,11 @@ export type SettingsData = {
     enabled: boolean
     key: string
     autoSync: boolean
+  }
+  marketData: {
+    provider: MarketDataProvider
+    massiveApiKey: string
+    twelveDataApiKey: string
   }
 }
 
@@ -36,31 +47,27 @@ export const defaultSettings: SettingsData = {
     key: "",
     autoSync: true,
   },
+  marketData: {
+    provider: DEFAULT_MARKET_DATA_PROVIDER,
+    massiveApiKey: "",
+    twelveDataApiKey: "",
+  },
 }
 
-const normalizeLanguage = (value: unknown): SettingsData["language"] => {
-  if (value === "fr" || value === "en" || value === "es") {
-    return value
-  }
-  return defaultSettings.language
-}
+const normalizeLanguage = (value: unknown): SettingsData["language"] =>
+  value === "fr" || value === "en" || value === "es" ? value : defaultSettings.language
 
-const normalizeCurrency = (value: unknown): SettingsData["currency"] => {
-  if (value === "eur" || value === "usd" || value === "gbp") {
-    return value
-  }
-  return defaultSettings.currency
-}
+const normalizeCurrency = (value: unknown): SettingsData["currency"] =>
+  value === "eur" || value === "usd" || value === "gbp" ? value : defaultSettings.currency
 
-const normalizeTimezone = (value: unknown): SettingsData["timezone"] => {
-  if (value === "paris" || value === "new-york" || value === "singapore") {
-    return value
-  }
-  return defaultSettings.timezone
-}
+const normalizeTimezone = (value: unknown): SettingsData["timezone"] =>
+  value === "paris" || value === "new-york" || value === "singapore"
+    ? value
+    : defaultSettings.timezone
 
 const normalize = (value: Partial<SettingsData>): SettingsData => {
   const syncRaw = (value.sync ?? {}) as Partial<SettingsData["sync"]>
+  const marketDataRaw = (value.marketData ?? {}) as Partial<SettingsData["marketData"]>
 
   return {
     ...defaultSettings,
@@ -80,6 +87,17 @@ const normalize = (value: Partial<SettingsData>): SettingsData => {
           : defaultSettings.sync.key,
       autoSync:
         typeof syncRaw.autoSync === "boolean" ? syncRaw.autoSync : defaultSettings.sync.autoSync,
+    },
+    marketData: {
+      provider: normalizeMarketProvider(marketDataRaw.provider),
+      massiveApiKey:
+        typeof marketDataRaw.massiveApiKey === "string"
+          ? marketDataRaw.massiveApiKey.trim().slice(0, 256)
+          : defaultSettings.marketData.massiveApiKey,
+      twelveDataApiKey:
+        typeof marketDataRaw.twelveDataApiKey === "string"
+          ? marketDataRaw.twelveDataApiKey.trim().slice(0, 256)
+          : defaultSettings.marketData.twelveDataApiKey,
     },
   }
 }

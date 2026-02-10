@@ -388,6 +388,108 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Données de marché</CardTitle>
+              <CardDescription>
+                Choisissez la source prioritaire et mettez à jour vos clés API Massive / TwelveData.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="settings-market-provider">
+                  Provider prioritaire
+                </label>
+                <select
+                  id="settings-market-provider"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={settings.marketData.provider}
+                  onChange={(event) =>
+                    updateSettings(
+                      {
+                        marketData: {
+                          ...settings.marketData,
+                          provider: event.target.value as SettingsData["marketData"]["provider"],
+                        },
+                      },
+                      true
+                    )
+                  }
+                  disabled={isLoading}
+                >
+                  <option value="auto">Auto (TwelveData puis Massive)</option>
+                  <option value="twelvedata">TwelveData en priorité</option>
+                  <option value="massive">Massive en priorité</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="settings-twelvedata-key">
+                  Clé API TwelveData
+                </label>
+                <Input
+                  id="settings-twelvedata-key"
+                  type="password"
+                  placeholder="td_..."
+                  value={settings.marketData.twelveDataApiKey}
+                  onChange={(event) =>
+                    updateSettings({
+                      marketData: {
+                        ...settings.marketData,
+                        twelveDataApiKey: event.target.value,
+                      },
+                    })
+                  }
+                  onBlur={(event) =>
+                    updateSettings(
+                      {
+                        marketData: {
+                          ...settings.marketData,
+                          twelveDataApiKey: event.target.value,
+                        },
+                      },
+                      true
+                    )
+                  }
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="settings-massive-key">
+                  Clé API Massive (Polygon)
+                </label>
+                <Input
+                  id="settings-massive-key"
+                  type="password"
+                  placeholder="your_massive_api_key"
+                  value={settings.marketData.massiveApiKey}
+                  onChange={(event) =>
+                    updateSettings({
+                      marketData: {
+                        ...settings.marketData,
+                        massiveApiKey: event.target.value,
+                      },
+                    })
+                  }
+                  onBlur={(event) =>
+                    updateSettings(
+                      {
+                        marketData: {
+                          ...settings.marketData,
+                          massiveApiKey: event.target.value,
+                        },
+                      },
+                      true
+                    )
+                  }
+                  disabled={isLoading}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Les clés sont stockées localement dans votre navigateur et peuvent être remplacées à tout moment.
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="xl:col-span-2">
             <CardHeader>
               <CardTitle>Confidentialité &amp; synchronisation</CardTitle>

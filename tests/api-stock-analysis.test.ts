@@ -1,7 +1,30 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { GET, POST } from "@/app/api/stock-analysis/route"
 
 describe("/api/stock-analysis", () => {
+  const previousMassiveLiveData = process.env.MASSIVE_LIVE_DATA
+  const previousMassiveApiKey = process.env.MASSIVE_API_KEY
+  const previousPolygonApiKey = process.env.POLYGON_API_KEY
+  const previousTwelveDataLiveData = process.env.TWELVEDATA_LIVE_DATA
+  const previousTwelveDataApiKey = process.env.TWELVEDATA_API_KEY
+
+  beforeEach(() => {
+    // Keep tests deterministic and network-free
+    process.env.MASSIVE_LIVE_DATA = "false"
+    delete process.env.MASSIVE_API_KEY
+    delete process.env.POLYGON_API_KEY
+    process.env.TWELVEDATA_LIVE_DATA = "false"
+    delete process.env.TWELVEDATA_API_KEY
+  })
+
+  afterEach(() => {
+    process.env.MASSIVE_LIVE_DATA = previousMassiveLiveData
+    process.env.MASSIVE_API_KEY = previousMassiveApiKey
+    process.env.POLYGON_API_KEY = previousPolygonApiKey
+    process.env.TWELVEDATA_LIVE_DATA = previousTwelveDataLiveData
+    process.env.TWELVEDATA_API_KEY = previousTwelveDataApiKey
+  })
+
   it("returns validation error on invalid payload", async () => {
     const response = await POST(
       new Request("http://localhost/api/stock-analysis", {
@@ -59,5 +82,5 @@ describe("/api/stock-analysis", () => {
     expect(payload.success).toBe(true)
     expect(payload.data?.symbol).toBe("MSFT")
   })
-})
 
+})

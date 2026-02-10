@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { parseMarketDataRequestHeaders } from "@/lib/market-data-config"
 import { getTradingQuotes } from "@/lib/trading-storage"
 
 export const GET = async (request: Request) => {
@@ -17,6 +18,7 @@ export const GET = async (request: Request) => {
     return NextResponse.json({ message: "Provide between 1 and 50 symbols." }, { status: 400 })
   }
 
-  const quotes = await getTradingQuotes(symbols)
+  const marketDataConfig = parseMarketDataRequestHeaders(request)
+  const quotes = await getTradingQuotes(symbols, marketDataConfig)
   return NextResponse.json(quotes)
 }

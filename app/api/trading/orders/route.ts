@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { parseMarketDataRequestHeaders } from "@/lib/market-data-config"
 import { listTradingOrders, placeTradingOrder } from "@/lib/trading-storage"
 import { paperOrderInputSchema } from "@/lib/trading-types"
 
@@ -44,8 +45,13 @@ export const POST = async (request: Request) => {
   const rawSource = request.headers.get("x-order-source")?.trim().toLowerCase()
   const sourceParsed = orderSourceSchema.safeParse(rawSource)
   const source = sourceParsed.success ? sourceParsed.data : "api"
+  const marketDataConfig = parseMarketDataRequestHeaders(request)
 
-  const order = await placeTradingOrder(parsed.data, { idempotencyKey, source })
+  const order = await placeTradingOrder(parsed.data, {
+    idempotencyKey,
+    source,
+    marketDataConfig,
+  })
 
   if (order.status === "rejected") {
     return NextResponse.json(order, {

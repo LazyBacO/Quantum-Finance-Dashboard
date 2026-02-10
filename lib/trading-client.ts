@@ -7,9 +7,16 @@ import type {
   PaperTradingPolicy,
   PaperTradingPolicyUpdate,
 } from "@/lib/trading-types"
+import { buildMarketDataHeaders } from "@/lib/market-data-client"
 
 const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Promise<T> => {
-  const response = await fetch(input, init)
+  const headers = new Headers(init?.headers ?? {})
+  const marketDataHeaders = buildMarketDataHeaders()
+  for (const [key, value] of Object.entries(marketDataHeaders as Record<string, string>)) {
+    headers.set(key, value)
+  }
+
+  const response = await fetch(input, { ...init, headers })
   const text = await response.text()
   const payload = text ? (JSON.parse(text) as unknown) : null
 
@@ -38,6 +45,7 @@ export const placeTradingOrder = async (
 ): Promise<PaperOrder> => {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    ...(buildMarketDataHeaders() as Record<string, string>),
   }
   if (options?.idempotencyKey) {
     headers["Idempotency-Key"] = options.idempotencyKey
