@@ -120,6 +120,10 @@ const tradingOverviewSchema = z.object({
     maxOrderNotionalCents: z.number().int().positive(),
     allowShort: z.boolean(),
     blockedSymbols: z.array(z.string().min(1).max(12)).max(200),
+    maxOpenPositions: z.number().int().min(1).max(200),
+    maxDailyLossCents: z.number().int().nonnegative(),
+    maxDrawdownPct: z.number().min(5).max(90),
+    killSwitchEnabled: z.boolean(),
   }),
   positions: z
     .array(
@@ -147,9 +151,30 @@ const tradingOverviewSchema = z.object({
         fillPriceCents: z.number().int().positive().nullable(),
         notionalCents: z.number().int().nonnegative(),
         reason: z.string().max(400).optional(),
+        idempotencyKey: z.string().min(1).max(120).optional(),
+        source: z.enum(["ui", "api", "ai"]).optional(),
       })
     )
     .max(100),
+  risk: z.object({
+    level: z.enum(["ok", "watch", "restrict", "halt"]),
+    canTrade: z.boolean(),
+    canOpenNewRisk: z.boolean(),
+    killSwitch: z.boolean(),
+    peakEquityCents: z.number().int(),
+    currentEquityCents: z.number().int(),
+    drawdownPct: z.number().min(0).max(100),
+    rejectedOrders24h: z.number().int().nonnegative(),
+    signals: z
+      .array(
+        z.object({
+          code: z.string().min(1).max(64),
+          severity: z.enum(["info", "warning", "critical"]),
+          message: z.string().min(1).max(400),
+        })
+      )
+      .max(20),
+  }),
 })
 
 const stockIntelligenceSchema = z.object({
@@ -498,7 +523,7 @@ export async function POST(req: Request) {
     ? `\n### Long-Term Growth Toolkit:\n- Risk profile: ${growthToolkit.riskProfile}\n- Horizon: ${growthToolkit.horizonYears} years\n- Emergency fund: ${growthToolkit.emergencyFundMonths} months\n- Savings rate: ${growthToolkit.savingsRatePct}%\n- Max drawdown tolerance: ${growthToolkit.maxDrawdownPct}%\n- Rebalance threshold: ${growthToolkit.rebalanceThresholdPct}%\n- Target allocation: equities ${growthToolkit.targetAllocation.equities.toFixed(1)}%, bonds ${growthToolkit.targetAllocation.bonds.toFixed(1)}%, cash ${growthToolkit.targetAllocation.cash.toFixed(1)}%, alternatives ${growthToolkit.targetAllocation.alternatives.toFixed(1)}%\n- Current allocation: equities ${growthToolkit.currentAllocation.equities.toFixed(1)}%, bonds ${growthToolkit.currentAllocation.bonds.toFixed(1)}%, cash ${growthToolkit.currentAllocation.cash.toFixed(1)}%, alternatives ${growthToolkit.currentAllocation.alternatives.toFixed(1)}%\n- Simulation assumptions: initial capital ${growthToolkit.simulation.initialCapital.toFixed(0)}, annual contribution ${growthToolkit.simulation.annualContribution.toFixed(0)}, expected return ${growthToolkit.simulation.expectedReturnPct.toFixed(1)}%, volatility ${growthToolkit.simulation.annualVolatilityPct.toFixed(1)}%, inflation ${growthToolkit.simulation.inflationPct.toFixed(1)}%, target capital ${growthToolkit.simulation.targetCapital.toFixed(0)}\n`
     : "\n### Long-Term Growth Toolkit:\nNo long-term toolkit data provided.\n"
   const tradingOverviewSection = tradingOverview
-    ? `\n### Paper Trading Desk:\n- Cash: ${formatCurrencyFromCents(tradingOverview.account.cashCents)}\n- Equity: ${formatCurrencyFromCents(tradingOverview.account.equityCents)}\n- Position value: ${formatCurrencyFromCents(tradingOverview.account.positionsValueCents)}\n- Realized PnL: ${formatCurrencyFromCents(tradingOverview.account.realizedPnlCents)}\n- Buying power: ${formatCurrencyFromCents(tradingOverview.account.buyingPowerCents)}\n- Policy: max position ${tradingOverview.policy.maxPositionPct.toFixed(1)}%, max order ${formatCurrencyFromCents(tradingOverview.policy.maxOrderNotionalCents)}, short allowed ${tradingOverview.policy.allowShort ? "yes" : "no"}, blocked symbols ${tradingOverview.policy.blockedSymbols.join(", ") || "none"}\n- Current positions:\n${tradingOverview.positions.slice(0, 8).map((position) => `  - ${position.symbol}: qty ${position.quantity}, avg ${formatCurrencyFromCents(position.avgPriceCents)}, market ${formatCurrencyFromCents(position.marketPriceCents)}, value ${formatCurrencyFromCents(position.marketValueCents)}, unrealized PnL ${formatCurrencyFromCents(position.unrealizedPnlCents)}`).join("\n") || "  - No open positions"}\n- Recent orders:\n${tradingOverview.recentOrders.slice(0, 8).map((order) => `  - ${order.side.toUpperCase()} ${order.quantity} ${order.symbol} (${order.type.toUpperCase()}) => ${order.status.toUpperCase()}${order.fillPriceCents ? ` @ ${formatCurrencyFromCents(order.fillPriceCents)}` : ""}${order.reason ? ` (${order.reason})` : ""}`).join("\n") || "  - No recent orders"}\n`
+    ? `\n### Paper Trading Desk:\n- Cash: ${formatCurrencyFromCents(tradingOverview.account.cashCents)}\n- Equity: ${formatCurrencyFromCents(tradingOverview.account.equityCents)}\n- Position value: ${formatCurrencyFromCents(tradingOverview.account.positionsValueCents)}\n- Realized PnL: ${formatCurrencyFromCents(tradingOverview.account.realizedPnlCents)}\n- Buying power: ${formatCurrencyFromCents(tradingOverview.account.buyingPowerCents)}\n- Policy: max position ${tradingOverview.policy.maxPositionPct.toFixed(1)}%, max order ${formatCurrencyFromCents(tradingOverview.policy.maxOrderNotionalCents)}, max open positions ${tradingOverview.policy.maxOpenPositions}, max daily loss ${formatCurrencyFromCents(tradingOverview.policy.maxDailyLossCents)}, max drawdown ${tradingOverview.policy.maxDrawdownPct.toFixed(1)}%, short allowed ${tradingOverview.policy.allowShort ? "yes" : "no"}, kill-switch ${tradingOverview.policy.killSwitchEnabled ? "enabled" : "disabled"}, blocked symbols ${tradingOverview.policy.blockedSymbols.join(", ") || "none"}\n- Risk state: level ${tradingOverview.risk.level.toUpperCase()}, canTrade ${tradingOverview.risk.canTrade ? "yes" : "no"}, canOpenNewRisk ${tradingOverview.risk.canOpenNewRisk ? "yes" : "no"}, drawdown ${tradingOverview.risk.drawdownPct.toFixed(2)}%, rejected24h ${tradingOverview.risk.rejectedOrders24h}\n- Risk signals:\n${tradingOverview.risk.signals.slice(0, 8).map((signal) => `  - [${signal.severity.toUpperCase()}] ${signal.message}`).join("\n") || "  - No active risk signal"}\n- Current positions:\n${tradingOverview.positions.slice(0, 8).map((position) => `  - ${position.symbol}: qty ${position.quantity}, avg ${formatCurrencyFromCents(position.avgPriceCents)}, market ${formatCurrencyFromCents(position.marketPriceCents)}, value ${formatCurrencyFromCents(position.marketValueCents)}, unrealized PnL ${formatCurrencyFromCents(position.unrealizedPnlCents)}`).join("\n") || "  - No open positions"}\n- Recent orders:\n${tradingOverview.recentOrders.slice(0, 8).map((order) => `  - ${order.side.toUpperCase()} ${order.quantity} ${order.symbol} (${order.type.toUpperCase()}) => ${order.status.toUpperCase()}${order.fillPriceCents ? ` @ ${formatCurrencyFromCents(order.fillPriceCents)}` : ""}${order.reason ? ` (${order.reason})` : ""}`).join("\n") || "  - No recent orders"}\n`
     : "\n### Paper Trading Desk:\nNo paper trading data provided.\n"
   const stockIntelligenceSection = stockIntelligence
     ? `\n### Stock Intelligence:\n- Summary:\n${stockIntelligence.summary}\n- Stats: invested ${stockIntelligence.registry.stats.totalInvested.toFixed(2)}, realizedPnL ${stockIntelligence.registry.stats.totalRealizedGainLoss.toFixed(2)}, realizedReturn ${stockIntelligence.registry.stats.totalRealizedReturnPct.toFixed(2)}%, active ${stockIntelligence.registry.stats.activePositions}, closed ${stockIntelligence.registry.stats.closedPositions}, winRate ${stockIntelligence.registry.stats.winRate.toFixed(1)}%\n- Active positions:\n${stockIntelligence.registry.activePositions.slice(0, 8).map((position) => `  - ${position.symbol} ${position.side.toUpperCase()} ${position.shares} @ ${position.entryPrice.toFixed(2)}, signal ${position.signal}, confidence ${position.confidence.toFixed(0)}%, risk ${position.riskScore.toFixed(0)}, target ${position.targetPrice.toFixed(2)}, stop ${position.stopLoss?.toFixed(2) ?? "n/a"}`).join("\n") || "  - No active analyzed position"}\n- Recent analyses:\n${stockIntelligence.registry.recentAnalyses.slice(0, 8).map((item) => `  - ${item.symbol} ${item.signal} (${item.confidence.toFixed(0)}%) status ${item.status}, expected ${item.potentialReturn.toFixed(2)}%`).join("\n") || "  - No recent stock analysis"}\n- Alerts: active ${stockIntelligence.alerts.activeCount}, critical ${stockIntelligence.alerts.criticalCount}, warning ${stockIntelligence.alerts.warningCount}\n- Recent triggered alerts:\n${stockIntelligence.alerts.recentTriggered.slice(0, 8).map((alert) => `  - ${alert.symbol} ${alert.severity.toUpperCase()}: ${alert.message}`).join("\n") || "  - No recently triggered alert"}\n`
@@ -561,6 +586,7 @@ ${aiFinanceIntelligenceSection}
 - If suggesting trades, include sizing rationale and risk controls from the paper trading policy
 - Do not imply real brokerage execution; this environment uses paper trading simulation
 - Always use the stock intelligence context (signals, RSI/MACD, registry performance, alerts) when giving equity advice
+- If paper-trading risk level is RESTRICT or HALT, prioritize risk reduction and avoid suggesting new risk-increasing orders
 - Use AI Finance Intelligence priorities as the default execution queue and explain which priority each recommendation addresses
 - Proactively surface one to three high-impact actions when critical or warning alerts exist
 

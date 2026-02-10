@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { CandlestickChart, ShieldAlert, Wallet2 } from "lucide-react"
+import { AlertTriangle, CandlestickChart, ShieldAlert, Wallet2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   getTradingOverview,
@@ -43,7 +43,11 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
   const [policyDraft, setPolicyDraft] = useState({
     maxPositionPct: "35",
     maxOrderNotionalUsd: "25000",
+    maxOpenPositions: "12",
+    maxDailyLossUsd: "2500",
+    maxDrawdownPct: "18",
     allowShort: false,
+    killSwitchEnabled: false,
     blockedSymbols: "",
   })
   const [quote, setQuote] = useState<PaperQuote | null>(null)
@@ -58,7 +62,11 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
     setPolicyDraft({
       maxPositionPct: nextPolicy.maxPositionPct.toString(),
       maxOrderNotionalUsd: (nextPolicy.maxOrderNotionalCents / 100).toString(),
+      maxOpenPositions: nextPolicy.maxOpenPositions.toString(),
+      maxDailyLossUsd: (nextPolicy.maxDailyLossCents / 100).toString(),
+      maxDrawdownPct: nextPolicy.maxDrawdownPct.toString(),
       allowShort: nextPolicy.allowShort,
+      killSwitchEnabled: nextPolicy.killSwitchEnabled,
       blockedSymbols: nextPolicy.blockedSymbols.join(", "),
     })
     return nextPolicy
@@ -158,7 +166,12 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
 
     setSubmittingOrder(true)
     try {
-      const order = await placeTradingOrder(payload)
+      const idempotencyKey =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+
+      const order = await placeTradingOrder(payload, { source: "ui", idempotencyKey })
       if (order.status === "rejected") {
         setStatus({ tone: "error", message: order.reason || "Ordre rejeté par les garde-fous." })
       } else {
@@ -181,8 +194,17 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
   const savePolicy = async () => {
     const maxPositionPct = Number.parseFloat(policyDraft.maxPositionPct)
     const maxOrderNotionalUsd = Number.parseFloat(policyDraft.maxOrderNotionalUsd)
+    const maxOpenPositions = Number.parseInt(policyDraft.maxOpenPositions, 10)
+    const maxDailyLossUsd = Number.parseFloat(policyDraft.maxDailyLossUsd)
+    const maxDrawdownPct = Number.parseFloat(policyDraft.maxDrawdownPct)
 
-    if (!Number.isFinite(maxPositionPct) || !Number.isFinite(maxOrderNotionalUsd)) {
+    if (
+      !Number.isFinite(maxPositionPct) ||
+      !Number.isFinite(maxOrderNotionalUsd) ||
+      !Number.isFinite(maxOpenPositions) ||
+      !Number.isFinite(maxDailyLossUsd) ||
+      !Number.isFinite(maxDrawdownPct)
+    ) {
       setStatus({ tone: "error", message: "Paramètres de risque invalides." })
       return
     }
@@ -197,14 +219,22 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
       const policy = await updateTradingPolicy({
         maxPositionPct,
         maxOrderNotionalCents: Math.round(maxOrderNotionalUsd * 100),
+        maxOpenPositions,
+        maxDailyLossCents: Math.round(maxDailyLossUsd * 100),
+        maxDrawdownPct,
         allowShort: policyDraft.allowShort,
+        killSwitchEnabled: policyDraft.killSwitchEnabled,
         blockedSymbols,
       })
 
       setPolicyDraft({
         maxPositionPct: policy.maxPositionPct.toString(),
         maxOrderNotionalUsd: (policy.maxOrderNotionalCents / 100).toString(),
+        maxOpenPositions: policy.maxOpenPositions.toString(),
+        maxDailyLossUsd: (policy.maxDailyLossCents / 100).toString(),
+        maxDrawdownPct: policy.maxDrawdownPct.toString(),
         allowShort: policy.allowShort,
+        killSwitchEnabled: policy.killSwitchEnabled,
         blockedSymbols: policy.blockedSymbols.join(", "),
       })
       setStatus({ tone: "success", message: "Politique de risque enregistrée." })
@@ -387,6 +417,42 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
             <ShieldAlert className="h-5 w-5 text-primary" />
           </div>
 
+          {overview?.risk && (
+            <div className="rounded-lg border border-border/60 bg-background/60 p-3 text-xs">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-muted-foreground">Niveau risque</span>
+                <span
+                  className={cn(
+                    "rounded px-2 py-0.5 font-semibold uppercase",
+                    overview.risk.level === "halt"
+                      ? "bg-rose-100 text-rose-700"
+                      : overview.risk.level === "restrict"
+                        ? "bg-amber-100 text-amber-700"
+                        : overview.risk.level === "watch"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-emerald-100 text-emerald-700"
+                  )}
+                >
+                  {overview.risk.level}
+                </span>
+              </div>
+              <div className="grid gap-1 md:grid-cols-2">
+                <p className="text-muted-foreground">Drawdown: {overview.risk.drawdownPct.toFixed(2)}%</p>
+                <p className="text-muted-foreground">Rejets 24h: {overview.risk.rejectedOrders24h}</p>
+              </div>
+              {overview.risk.signals.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {overview.risk.signals.slice(0, 3).map((signal) => (
+                    <p key={signal.code} className="flex items-start gap-1 text-muted-foreground">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
+                      {signal.message}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-2 md:grid-cols-2">
             <label className="space-y-1 text-xs text-muted-foreground">
               Max position (%)
@@ -409,6 +475,39 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               />
             </label>
+            <label className="space-y-1 text-xs text-muted-foreground">
+              Max positions ouvertes
+              <input
+                type="number"
+                min="1"
+                max="200"
+                value={policyDraft.maxOpenPositions}
+                onChange={(event) => setPolicyDraft((current) => ({ ...current, maxOpenPositions: event.target.value }))}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-muted-foreground">
+              Perte max journalière (USD)
+              <input
+                type="number"
+                min="0"
+                value={policyDraft.maxDailyLossUsd}
+                onChange={(event) => setPolicyDraft((current) => ({ ...current, maxDailyLossUsd: event.target.value }))}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-muted-foreground">
+              Drawdown max (%)
+              <input
+                type="number"
+                min="5"
+                max="90"
+                step="0.1"
+                value={policyDraft.maxDrawdownPct}
+                onChange={(event) => setPolicyDraft((current) => ({ ...current, maxDrawdownPct: event.target.value }))}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              />
+            </label>
           </div>
 
           <label className="space-y-1 text-xs text-muted-foreground block">
@@ -427,6 +526,16 @@ export default function AiTradingDesk({ className }: AiTradingDeskProps) {
               type="checkbox"
               checked={policyDraft.allowShort}
               onChange={(event) => setPolicyDraft((current) => ({ ...current, allowShort: event.target.checked }))}
+              className="h-4 w-4"
+            />
+          </label>
+
+          <label className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+            Kill-switch global
+            <input
+              type="checkbox"
+              checked={policyDraft.killSwitchEnabled}
+              onChange={(event) => setPolicyDraft((current) => ({ ...current, killSwitchEnabled: event.target.checked }))}
               className="h-4 w-4"
             />
           </label>

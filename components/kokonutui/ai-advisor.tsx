@@ -130,7 +130,7 @@ export default function AIAdvisor({ className }: AIAdvisorProps) {
           },
           uiLocale,
           growthToolkit,
-          tradingOverview,
+          tradingOverview: tradingOverview ?? undefined,
           stockIntelligence,
           aiFinanceIntelligence,
         },

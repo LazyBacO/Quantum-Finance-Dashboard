@@ -7,6 +7,9 @@ const orderPayloadSchema = paperOrderInputSchema.extend({
   symbol: z.string().min(1).max(12),
 })
 
+const idempotencyKeySchema = z.string().min(1).max(120)
+const orderSourceSchema = z.enum(["ui", "api", "ai"])
+
 export const GET = async () => {
   const orders = await listTradingOrders()
   return NextResponse.json(orders)
@@ -31,11 +34,28 @@ export const POST = async (request: Request) => {
     )
   }
 
-  const order = await placeTradingOrder(parsed.data)
+  const rawIdempotencyKey = request.headers.get("idempotency-key")
+  const idempotencyKey = rawIdempotencyKey
+    ? idempotencyKeySchema.safeParse(rawIdempotencyKey.trim()).success
+      ? rawIdempotencyKey.trim()
+      : undefined
+    : undefined
+
+  const rawSource = request.headers.get("x-order-source")?.trim().toLowerCase()
+  const sourceParsed = orderSourceSchema.safeParse(rawSource)
+  const source = sourceParsed.success ? sourceParsed.data : "api"
+
+  const order = await placeTradingOrder(parsed.data, { idempotencyKey, source })
 
   if (order.status === "rejected") {
-    return NextResponse.json(order, { status: 422 })
+    return NextResponse.json(order, {
+      status: 422,
+      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+    })
   }
 
-  return NextResponse.json(order, { status: 201 })
+  return NextResponse.json(order, {
+    status: 201,
+    headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+  })
 }

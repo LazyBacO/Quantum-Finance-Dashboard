@@ -182,6 +182,16 @@ const scoreRiskControl = (
   if (tradingOverview) {
     score += clamp((35 - tradingOverview.policy.maxPositionPct) * 0.5, -10, 12)
     score += tradingOverview.policy.allowShort ? -6 : 4
+    score -= clamp((tradingOverview.risk.drawdownPct - tradingOverview.policy.maxDrawdownPct * 0.6) * 0.8, 0, 20)
+    score -= clamp((tradingOverview.risk.rejectedOrders24h - 3) * 2.5, 0, 15)
+    if (tradingOverview.policy.killSwitchEnabled) {
+      score -= 25
+    }
+    if (tradingOverview.risk.level === "halt") {
+      score -= 20
+    } else if (tradingOverview.risk.level === "restrict") {
+      score -= 10
+    }
   }
 
   if (stockIntelligence) {
@@ -359,13 +369,20 @@ const buildConstraints = (
     constraints.push(
       `Trading policy: max position ${formatPercent(tradingOverview.policy.maxPositionPct)}, max order ${formatUsd(
         centsToUsd(tradingOverview.policy.maxOrderNotionalCents)
-      )}, short ${tradingOverview.policy.allowShort ? "enabled" : "disabled"}.`
+      )}, max open positions ${tradingOverview.policy.maxOpenPositions}, max daily loss ${formatUsd(
+        centsToUsd(tradingOverview.policy.maxDailyLossCents)
+      )}, max drawdown ${formatPercent(tradingOverview.policy.maxDrawdownPct)}, short ${tradingOverview.policy.allowShort ? "enabled" : "disabled"}, kill-switch ${tradingOverview.policy.killSwitchEnabled ? "enabled" : "disabled"}.`
     )
     if (tradingOverview.policy.blockedSymbols.length > 0) {
       constraints.push(
         `Blocked symbols: ${tradingOverview.policy.blockedSymbols.slice(0, 8).join(", ")}.`
       )
     }
+    constraints.push(
+      `Current risk regime ${tradingOverview.risk.level.toUpperCase()} (drawdown ${formatPercent(
+        tradingOverview.risk.drawdownPct
+      )}, rejected orders 24h ${tradingOverview.risk.rejectedOrders24h}).`
+    )
   }
 
   if (stockIntelligence && stockIntelligence.alerts.activeCount > 0) {

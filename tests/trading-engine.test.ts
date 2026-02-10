@@ -11,9 +11,14 @@ const baseStore = (): PaperTradingStore => ({
     maxOrderNotionalCents: 500_000,
     allowShort: false,
     blockedSymbols: [],
+    maxOpenPositions: 5,
+    maxDailyLossCents: 100_000,
+    maxDrawdownPct: 30,
+    killSwitchEnabled: false,
   },
   positions: [],
   orders: [],
+  equityHistory: [{ at: new Date().toISOString(), equityCents: 1_000_000 }],
   updatedAt: new Date().toISOString(),
 })
 
@@ -107,5 +112,37 @@ describe("trading engine", () => {
     expect(result.order.status).toBe("rejected")
     expect(result.order.reason?.toLowerCase()).toContain("limit")
   })
-})
 
+  it("rejects all orders when kill-switch is enabled", () => {
+    const store = baseStore()
+    store.policy.killSwitchEnabled = true
+
+    const result = executePaperOrder(store, {
+      symbol: "AAPL",
+      side: "buy",
+      quantity: 1,
+      type: "market",
+    })
+
+    expect(result.order.status).toBe("rejected")
+    expect(result.order.reason?.toLowerCase()).toContain("suspendu")
+  })
+
+  it("rejects opening a new position when max open positions is reached", () => {
+    const store = baseStore()
+    store.policy.maxOpenPositions = 1
+    store.positions = [
+      { symbol: "AAPL", quantity: 1, avgPriceCents: 19_000 },
+    ]
+
+    const result = executePaperOrder(store, {
+      symbol: "MSFT",
+      side: "buy",
+      quantity: 1,
+      type: "market",
+    })
+
+    expect(result.order.status).toBe("rejected")
+    expect(result.order.reason?.toLowerCase()).toContain("interdit d'ouvrir davantage de risque")
+  })
+})

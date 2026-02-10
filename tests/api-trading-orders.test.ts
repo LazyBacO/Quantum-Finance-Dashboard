@@ -100,7 +100,11 @@ describe("/api/trading/orders", () => {
     const response = await POST(
       new Request("http://localhost/api/trading/orders", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "idempotency-key": "idem-123",
+          "x-order-source": "ai",
+        },
         body: JSON.stringify({
           symbol: "MSFT",
           side: "buy",
@@ -111,6 +115,10 @@ describe("/api/trading/orders", () => {
     )
 
     expect(response.status).toBe(201)
+    expect(response.headers.get("Idempotency-Key")).toBe("idem-123")
+    expect(mocks.placeTradingOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ symbol: "MSFT", side: "buy", quantity: 1, type: "market" }),
+      { idempotencyKey: "idem-123", source: "ai" }
+    )
   })
 })
-

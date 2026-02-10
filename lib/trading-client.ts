@@ -1,4 +1,5 @@
 import type {
+  OrderSource,
   PaperOrder,
   PaperOrderInput,
   PaperQuote,
@@ -31,12 +32,23 @@ export const getTradingOrders = async (): Promise<PaperOrder[]> => {
   return fetchJson<PaperOrder[]>("/api/trading/orders")
 }
 
-export const placeTradingOrder = async (order: PaperOrderInput): Promise<PaperOrder> => {
+export const placeTradingOrder = async (
+  order: PaperOrderInput,
+  options?: { idempotencyKey?: string; source?: OrderSource }
+): Promise<PaperOrder> => {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  }
+  if (options?.idempotencyKey) {
+    headers["Idempotency-Key"] = options.idempotencyKey
+  }
+  if (options?.source) {
+    headers["X-Order-Source"] = options.source
+  }
+
   const response = await fetch("/api/trading/orders", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(order),
   })
 

@@ -61,6 +61,12 @@ export {
   type AlertPreferences,
 } from "@/lib/stock-alerts"
 
+// Trading Risk
+export {
+  buildTradingRiskSnapshot,
+  isRiskIncreasingOrder,
+} from "@/lib/trading-risk"
+
 // Client Helpers
 export {
   analyzeStock as clientAnalyzeStock,

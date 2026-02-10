@@ -9,6 +9,7 @@ OpenNova est un système d'analyse boursière autonome **intégré dans le dashb
 - **Recommandations IA**: Signaux buy/sell avec confiance et targets
 - **Registre de Positions**: Historique complet des trades et performances
 - **Alertes Autonomes**: Notifications en temps réel basées sur conditions
+- **Risk Guardrails Institutionnels**: Kill-switch, drawdown max, perte journalière max, cap positions
 
 ---
 
@@ -153,6 +154,30 @@ Récupère analyse du portefeuille entier.
   }
 }
 ```
+
+---
+
+## Risk Guardrails Institutionnels (v1.1)
+
+Le paper trading intègre désormais un moteur de risque dynamique pour éviter les dérives d'exécution:
+
+- **Kill-switch manuel**: arrêt immédiat de tout nouvel ordre.
+- **Max Drawdown %**: passage en `HALT` si le drawdown portefeuille dépasse le seuil.
+- **Perte journalière max**: blocage automatique après dépassement du seuil de perte réalisée.
+- **Max positions ouvertes**: limite de complexité/exposition.
+- **Idempotency-Key**: anti-doublons API pour éviter les ordres répétés.
+- **Audit trail**: journal `data/trading-audit.ndjson` pour traçabilité complète.
+
+États de risque:
+- `OK`: exécution normale.
+- `WATCH`: surveillance renforcée.
+- `RESTRICT`: pas de nouvelle prise de risque.
+- `HALT`: exécution stoppée.
+
+Ces signaux sont exposés dans:
+- `GET /api/trading/overview` (`risk` snapshot complet)
+- UI `AI Trading Desk` (niveau, drawdown, signaux actifs)
+- Contexte GPT-5.3 dans `/api/chat` (guidance alignée sur garde-fous)
 
 ---
 

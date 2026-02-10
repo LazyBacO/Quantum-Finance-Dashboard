@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto"
+import { buildTradingRiskSnapshot, isRiskIncreasingOrder } from "@/lib/trading-risk"
 import {
   paperOrderSchema,
+  type OrderSource,
   type PaperAccountSummary,
   type PaperOrder,
   type PaperOrderInput,
@@ -125,6 +127,13 @@ const validateOrder = (
   account: PaperAccountSummary
 ): string | null => {
   const symbol = normalizeSymbol(input.symbol)
+  const riskSnapshot = buildTradingRiskSnapshot(store, account)
+
+  if (!riskSnapshot.canTrade) {
+    const firstCritical = riskSnapshot.signals.find((signal) => signal.severity === "critical")
+    return `Ordre rejeté: trading suspendu (${firstCritical?.message ?? "guardrail critique actif"}).`
+  }
+
   if (store.policy.blockedSymbols.map(normalizeSymbol).includes(symbol)) {
     return "Symbole bloqué par la politique de risque."
   }
@@ -140,6 +149,17 @@ const validateOrder = (
 
   const currentPosition = findPosition(store.positions, symbol)
   const currentQty = currentPosition?.quantity ?? 0
+  const riskIncreasing = isRiskIncreasingOrder(currentQty, input)
+  if (riskIncreasing && !riskSnapshot.canOpenNewRisk) {
+    return "Ordre rejeté: le régime de risque actuel interdit d'ouvrir davantage de risque."
+  }
+
+  const activePositions = store.positions.filter((position) => Math.abs(position.quantity) > 1e-8).length
+  const resultingQty = input.side === "buy" ? currentQty + input.quantity : currentQty - input.quantity
+  const opensNewPosition = Math.abs(currentQty) <= 1e-8 && Math.abs(resultingQty) > 1e-8
+  if (opensNewPosition && activePositions + 1 > store.policy.maxOpenPositions) {
+    return "Ordre rejeté: nombre maximal de positions ouvertes atteint."
+  }
 
   if (input.side === "buy" && notionalCents > store.cashCents) {
     return "Ordre rejeté: trésorerie insuffisante."
@@ -150,7 +170,6 @@ const validateOrder = (
   }
 
   const quoteForRisk = getPaperQuote(symbol)
-  const resultingQty = input.side === "buy" ? currentQty + input.quantity : currentQty - input.quantity
   const resultingNotional = Math.abs(resultingQty) * quoteForRisk.priceCents
   const positionPct = account.equityCents > 0 ? (resultingNotional / account.equityCents) * 100 : 100
 
@@ -280,7 +299,8 @@ const applyFill = (store: PaperTradingStore, input: PaperOrderInput, executionPr
 
 export const executePaperOrder = (
   store: PaperTradingStore,
-  rawInput: PaperOrderInput
+  rawInput: PaperOrderInput,
+  options?: { idempotencyKey?: string; source?: OrderSource }
 ): { store: PaperTradingStore; order: PaperOrder } => {
   const input: PaperOrderInput = {
     ...rawInput,
@@ -306,6 +326,8 @@ export const executePaperOrder = (
       fillPriceCents: null,
       notionalCents: computeNotionalCents(input.quantity, execution.executionPriceCents),
       reason: toPriorityReason(rejection),
+      idempotencyKey: options?.idempotencyKey,
+      source: options?.source,
     })
 
     return {
@@ -327,6 +349,8 @@ export const executePaperOrder = (
     executedAt: nowIso(),
     fillPriceCents: execution.executionPriceCents,
     notionalCents: computeNotionalCents(input.quantity, execution.executionPriceCents),
+    idempotencyKey: options?.idempotencyKey,
+    source: options?.source,
   })
 
   return {
