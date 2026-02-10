@@ -15,6 +15,18 @@ export interface TwelveDataAnalysisContext {
   fundamentals?: Partial<FundamentalMetrics>
 }
 
+type MarketConnectionFailureReason = "missing-key" | "disabled" | "no-data" | "provider-error"
+
+export interface TwelveDataConnectionTestResult {
+  success: boolean
+  symbol: string
+  status?: TwelveDataMarketStatus
+  currentPrice?: number
+  lastUpdatedIso?: string
+  reason?: MarketConnectionFailureReason
+  message: string
+}
+
 interface QuoteCacheEntry {
   priceCents: number
   asOf: string
@@ -126,6 +138,63 @@ export const getCachedTwelveDataQuote = (symbolInput: string) => {
   const cached = quoteCache.get(symbol)
   if (!cached) return null
   return cached.priceCents
+}
+
+export async function testTwelveDataConnection(
+  config?: MarketDataRequestConfig,
+  symbolInput = "AAPL"
+): Promise<TwelveDataConnectionTestResult> {
+  const symbol = toUpperSymbol(symbolInput)
+
+  if (!getApiKey(config)) {
+    return {
+      success: false,
+      symbol,
+      reason: "missing-key",
+      message: "Cle TwelveData manquante.",
+    }
+  }
+
+  if (process.env.TWELVEDATA_LIVE_DATA?.toLowerCase() === "false") {
+    return {
+      success: false,
+      symbol,
+      reason: "disabled",
+      message: "Source TwelveData desactivee par configuration serveur.",
+    }
+  }
+
+  try {
+    const response = await fetchTwelveDataJson<{
+      close?: string
+      datetime?: string
+    }>("/quote", { symbol }, config)
+    const close = parseNumber(response.close)
+    if (close === null || close <= 0) {
+      return {
+        success: false,
+        symbol,
+        reason: "no-data",
+        message: "Aucune cotation exploitable retournee par TwelveData.",
+      }
+    }
+
+    return {
+      success: true,
+      symbol,
+      status: "live",
+      currentPrice: round2(close),
+      lastUpdatedIso: parseDateToIso(response.datetime),
+      message: "Connexion TwelveData validee.",
+    }
+  } catch (error) {
+    return {
+      success: false,
+      symbol,
+      reason: "provider-error",
+      message: error instanceof Error ? error.message : "Erreur TwelveData inconnue.",
+    }
+  }
 }
 
 export async function prefetchTwelveDataQuotes(symbolsInput: string[], config?: MarketDataRequestConfig) {

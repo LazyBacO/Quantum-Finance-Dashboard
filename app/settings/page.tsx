@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input"
 import { defaultSettings, loadSettings, saveSettings, type SettingsData } from "@/lib/settings-store"
 
 type SettingsStatus = "idle" | "loading" | "saving" | "saved" | "error"
+type MarketDataProviderUnderTest = "massive" | "twelvedata"
+type MarketDataConnectionStatus = "idle" | "testing" | "success" | "error"
+
+type MarketDataConnectionState = {
+  status: MarketDataConnectionStatus
+  message: string
+}
 
 const statusCopy: Record<SettingsStatus, string> = {
   idle: "",
@@ -17,10 +24,21 @@ const statusCopy: Record<SettingsStatus, string> = {
   error: "Impossible d’enregistrer les paramètres.",
 }
 
+const defaultConnectionState: MarketDataConnectionState = {
+  status: "idle",
+  message: "",
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>(defaultSettings)
   const [status, setStatus] = useState<SettingsStatus>("loading")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [connectionState, setConnectionState] = useState<
+    Record<MarketDataProviderUnderTest, MarketDataConnectionState>
+  >({
+    massive: defaultConnectionState,
+    twelvedata: defaultConnectionState,
+  })
 
   useEffect(() => {
     let isMounted = true
@@ -106,6 +124,99 @@ export default function SettingsPage() {
       true
     )
   }, [settings.sync, updateSettings])
+
+  const resetConnectionState = useCallback((provider: MarketDataProviderUnderTest) => {
+    setConnectionState((current) => ({
+      ...current,
+      [provider]: defaultConnectionState,
+    }))
+  }, [])
+
+  const updateConnectionState = useCallback(
+    (provider: MarketDataProviderUnderTest, next: MarketDataConnectionState) => {
+      setConnectionState((current) => ({
+        ...current,
+        [provider]: next,
+      }))
+    },
+    []
+  )
+
+  const testMarketDataConnection = useCallback(
+    async (provider: MarketDataProviderUnderTest) => {
+      updateConnectionState(provider, {
+        status: "testing",
+        message: "Test en cours...",
+      })
+
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        "x-market-provider": provider,
+      }
+
+      const massiveApiKey = settings.marketData.massiveApiKey.trim()
+      const twelveDataApiKey = settings.marketData.twelveDataApiKey.trim()
+
+      if (massiveApiKey) {
+        headers["x-massive-api-key"] = massiveApiKey
+      }
+      if (twelveDataApiKey) {
+        headers["x-twelvedata-api-key"] = twelveDataApiKey
+      }
+
+      try {
+        const response = await fetch("/api/market-data/test-connection", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            provider,
+            symbol: "AAPL",
+          }),
+        })
+
+        const payload = (await response.json()) as {
+          success: boolean
+          error?: string
+          data?: {
+            source?: string
+            currentPrice?: number
+            symbol?: string
+          }
+        }
+
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error ?? "Test de connexion indisponible.")
+        }
+
+        const sourceLabel = payload.data?.source ?? provider
+        const symbol = payload.data?.symbol ?? "AAPL"
+        const priceLabel =
+          typeof payload.data?.currentPrice === "number" ? ` - ${payload.data.currentPrice.toFixed(2)} $` : ""
+
+        updateConnectionState(provider, {
+          status: "success",
+          message: `Connexion OK (${sourceLabel}) sur ${symbol}${priceLabel}.`,
+        })
+      } catch (error) {
+        updateConnectionState(provider, {
+          status: "error",
+          message: error instanceof Error ? error.message : "Echec de validation de la connexion API.",
+        })
+      }
+    },
+    [
+      settings.marketData.massiveApiKey,
+      settings.marketData.twelveDataApiKey,
+      updateConnectionState,
+    ]
+  )
+
+  const getConnectionStatusClassName = (provider: MarketDataProviderUnderTest) => {
+    const state = connectionState[provider]
+    if (state.status === "error") return "text-destructive"
+    if (state.status === "success") return "text-green-600"
+    return "text-muted-foreground"
+  }
 
   const isLoading = status === "loading"
 
@@ -431,14 +542,15 @@ export default function SettingsPage() {
                   type="password"
                   placeholder="td_..."
                   value={settings.marketData.twelveDataApiKey}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    resetConnectionState("twelvedata")
                     updateSettings({
                       marketData: {
                         ...settings.marketData,
                         twelveDataApiKey: event.target.value,
                       },
                     })
-                  }
+                  }}
                   onBlur={(event) =>
                     updateSettings(
                       {
@@ -452,6 +564,25 @@ export default function SettingsPage() {
                   }
                   disabled={isLoading}
                 />
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void testMarketDataConnection("twelvedata")}
+                    disabled={isLoading || connectionState.twelvedata.status === "testing"}
+                  >
+                    {connectionState.twelvedata.status === "testing"
+                      ? "Test TwelveData..."
+                      : "Tester la connexion API"}
+                  </Button>
+                  <span
+                    role={connectionState.twelvedata.status === "error" ? "alert" : "status"}
+                    className={`text-xs ${getConnectionStatusClassName("twelvedata")}`}
+                  >
+                    {connectionState.twelvedata.message}
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground" htmlFor="settings-massive-key">
@@ -462,14 +593,15 @@ export default function SettingsPage() {
                   type="password"
                   placeholder="your_massive_api_key"
                   value={settings.marketData.massiveApiKey}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    resetConnectionState("massive")
                     updateSettings({
                       marketData: {
                         ...settings.marketData,
                         massiveApiKey: event.target.value,
                       },
                     })
-                  }
+                  }}
                   onBlur={(event) =>
                     updateSettings(
                       {
@@ -483,6 +615,25 @@ export default function SettingsPage() {
                   }
                   disabled={isLoading}
                 />
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void testMarketDataConnection("massive")}
+                    disabled={isLoading || connectionState.massive.status === "testing"}
+                  >
+                    {connectionState.massive.status === "testing"
+                      ? "Test Massive..."
+                      : "Tester la connexion API"}
+                  </Button>
+                  <span
+                    role={connectionState.massive.status === "error" ? "alert" : "status"}
+                    className={`text-xs ${getConnectionStatusClassName("massive")}`}
+                  >
+                    {connectionState.massive.message}
+                  </span>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 Les clés sont stockées localement dans votre navigateur et peuvent être remplacées à tout moment.

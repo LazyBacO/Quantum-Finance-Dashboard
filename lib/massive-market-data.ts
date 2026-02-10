@@ -16,6 +16,18 @@ export interface MassiveAnalysisContext {
   fundamentals?: Partial<FundamentalMetrics>
 }
 
+type MarketConnectionFailureReason = "missing-key" | "disabled" | "no-data" | "provider-error"
+
+export interface MassiveConnectionTestResult {
+  success: boolean
+  symbol: string
+  status?: MassiveMarketStatus
+  currentPrice?: number
+  lastUpdatedIso?: string
+  reason?: MarketConnectionFailureReason
+  message: string
+}
+
 interface QuoteCacheEntry {
   priceCents: number
   asOf: string
@@ -141,6 +153,64 @@ const fetchMassiveJson = async <T>(
     return payload as T
   } finally {
     clearTimeout(timeout)
+  }
+}
+
+export async function testMassiveConnection(
+  config?: MarketDataRequestConfig,
+  symbolInput = "AAPL"
+): Promise<MassiveConnectionTestResult> {
+  const symbol = toUpperSymbol(symbolInput)
+  if (!getApiKey(config)) {
+    return {
+      success: false,
+      symbol,
+      reason: "missing-key",
+      message: "Cle Massive manquante.",
+    }
+  }
+
+  if (process.env.MASSIVE_LIVE_DATA?.toLowerCase() === "false") {
+    return {
+      success: false,
+      symbol,
+      reason: "disabled",
+      message: "Source Massive desactivee par configuration serveur.",
+    }
+  }
+
+  try {
+    const response = await fetchMassiveJson<{
+      status?: string
+      results?: Array<{ c?: number; t?: number }>
+    }>(`/v2/aggs/ticker/${symbol}/prev`, { adjusted: true }, config)
+    const close = getNumeric(response.results?.[0]?.c)
+    const timestamp = getNumeric(response.results?.[0]?.t)
+
+    if (close === null || close <= 0) {
+      return {
+        success: false,
+        symbol,
+        reason: "no-data",
+        message: "Aucune cotation exploitable retournee par Massive.",
+      }
+    }
+
+    return {
+      success: true,
+      symbol,
+      status: response.status === "DELAYED" ? "delayed" : "live",
+      currentPrice: round2(close),
+      lastUpdatedIso: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
+      message: "Connexion Massive validee.",
+    }
+  } catch (error) {
+    return {
+      success: false,
+      symbol,
+      reason: "provider-error",
+      message: error instanceof Error ? error.message : "Erreur Massive inconnue.",
+    }
   }
 }
 
