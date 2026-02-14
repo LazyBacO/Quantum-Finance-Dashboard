@@ -29,16 +29,35 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps
+      - name: Detect E2E script
+        id: detect
+        shell: bash
+        run: |
+          if pnpm pkg get scripts.e2e | grep -qv 'null'; then
+            echo "has_e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_e2e=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      # Option A: si ton Playwright config gère le webServer tout seul
-      - name: Run E2E
+      - name: Run E2E tests
+        if: steps.detect.outputs.has_e2e == 'true'
         run: pnpm e2e
 
-      - name: Upload Playwright report
+      - name: Create placeholder report
+        if: steps.detect.outputs.has_e2e != 'true'
+        run: |
+          mkdir -p test-results
+          {
+            echo "No E2E tests configured yet."
+            echo "Expected command: pnpm e2e"
+          } > test-results/e2e-placeholder.txt
+
+      - name: Upload E2E artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report
+          name: e2e-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: warn

@@ -1,20 +1,13 @@
-name: Real-time progress (10 min)
+name: Real-time progress
 
 on:
-  # GitHub schedule = best-effort, UTC, peut être retardé.
-  # On évite volontairement :00/:10/:20... (pics de charge)
   schedule:
-    - cron: "3-59/10 * * * *"
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
-  pull-requests: read
-
-concurrency:
-  group: real-time-progress
-  cancel-in-progress: true
 
 env:
   OPENNOVA_ISSUE_NUMBER: ${{ vars.OPENNOVA_ISSUE_NUMBER || secrets.OPENNOVA_ISSUE_NUMBER }}
@@ -22,39 +15,21 @@ env:
 jobs:
   progress:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Generate progress summary
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node .github/scripts/real_time_progress_generator.js
 
-      - name: Find existing progress comment
-        id: fc
-        uses: peter-evans/find-comment@v4
-        with:
-          issue-number: ${{ env.OPENNOVA_ISSUE_NUMBER }}
-          body-includes: "<!-- OPENNOVA_REALTIME_PROGRESS -->"
-
-      - name: Create progress comment (first run)
-        if: steps.fc.outputs.comment-id == ''
+      - name: Upsert progress comment
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ env.OPENNOVA_ISSUE_NUMBER }}
-          body-path: "progress_summary.txt"
-
-      - name: Update progress comment
-        if: steps.fc.outputs.comment-id != ''
-        uses: peter-evans/create-or-update-comment@v5
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ env.OPENNOVA_ISSUE_NUMBER }}
-          body-path: "progress_summary.txt"
-          edit-mode: replace
+          body-path: progress_summary.txt
