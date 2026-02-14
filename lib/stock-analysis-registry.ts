@@ -5,6 +5,7 @@ import type {
   StockPortfolioAnalysis,
 } from "@/lib/stock-analysis-engine"
 import type { StockAction } from "@/lib/portfolio-data"
+import { createPrefixedId } from "@/lib/random-id"
 
 export interface StockAnalysisEntry {
   id: string
@@ -75,11 +76,7 @@ const canUseStorage = () =>
 const nowIso = () => new Date().toISOString()
 
 const createId = () => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `analysis-${crypto.randomUUID()}`
-  }
-  const random = Math.random().toString(36).slice(2, 10)
-  return `analysis-${random}`
+  return createPrefixedId("analysis")
 }
 
 const stockActionSchema = z.object({

@@ -5,6 +5,7 @@ import Layout from "@/components/kokonutui/layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { createSyncKey } from "@/lib/random-id"
 import { defaultSettings, loadSettings, saveSettings, type SettingsData } from "@/lib/settings-store"
 
 type SettingsStatus = "idle" | "loading" | "saving" | "saved" | "error"
@@ -110,10 +111,7 @@ export default function SettingsPage() {
   }, [persistSettings, settings])
 
   const generateSyncKey = useCallback(() => {
-    const generated =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID().replace(/-/g, "")
-        : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+    const generated = createSyncKey(32)
     updateSettings(
       {
         sync: {

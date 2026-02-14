@@ -536,12 +536,22 @@ Remember: You are their trusted financial advisor with full visibility into thei
     )
   }
 
-  const result = streamText({
-    model: openai(modelId),
-    system: systemPrompt,
-    messages: modelMessages,
-  })
+  try {
+    const result = streamText({
+      model: openai(modelId),
+      system: systemPrompt,
+      messages: modelMessages,
+    })
 
-  return result.toUIMessageStreamResponse()
+    return result.toUIMessageStreamResponse({
+      headers: createRateLimitHeaders(rateLimit),
+    })
+  } catch {
+    return jsonResponse(
+      { error: "Upstream AI provider is temporarily unavailable." },
+      502,
+      createRateLimitHeaders(rateLimit)
+    )
+  }
 }
 

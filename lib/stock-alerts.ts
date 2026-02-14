@@ -1,4 +1,5 @@
 import type { StockAIRecommendation } from "@/lib/stock-analysis-engine"
+import { createPrefixedId } from "@/lib/random-id"
 
 export interface StockAlert {
   id: string
@@ -55,10 +56,7 @@ const canUseStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined"
 
 const createId = () => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `alert-${crypto.randomUUID()}`
-  }
-  return `alert-${Math.random().toString(36).slice(2, 10)}`
+  return createPrefixedId("alert")
 }
 
 const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase()

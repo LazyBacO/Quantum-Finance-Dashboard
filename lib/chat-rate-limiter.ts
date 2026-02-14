@@ -64,8 +64,8 @@ export function createClientIdentifier(headers: Headers) {
   for (const header of fallbackIpHeaders) {
     const value = headers.get(header)
     if (!value) continue
-    const candidate = extractIpCandidate(value)
-    if (candidate) return candidate
+    const candidate = normalizeIpToken(value)
+    if (candidate) return candidate.slice(0, MAX_IDENTIFIER_LENGTH)
   }
 
   const userAgent = headers.get("user-agent")?.trim()
