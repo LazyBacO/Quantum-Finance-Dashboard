@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 env:
@@ -28,12 +28,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            const latestCommit = await github.rest.repos.getCommit({
-              owner,
-              repo,
-              ref: 'main',
-            });
-
+            const latestCommit = await github.rest.repos.getCommit({ owner, repo, ref: 'main' });
             const workflows = await github.rest.actions.listRepoWorkflows({ owner, repo });
             const byName = Object.fromEntries(workflows.data.workflows.map((wf) => [wf.name, wf.id]));
 
@@ -56,14 +51,14 @@ jobs:
             const ciStatus = await latestConclusion('CI');
             const e2eStatus = await latestConclusion('E2E');
 
-            let acStatus = 'unknown';
-            if (e2eStatus === 'success') acStatus = 'pass';
-            if (['failure', 'cancelled', 'timed_out'].includes(e2eStatus)) acStatus = 'fail';
+            let acSummary = 'unknown';
+            if (e2eStatus === 'success') acSummary = 'AC-01 PASS, AC-02 PASS';
+            if (['failure', 'cancelled', 'timed_out'].includes(e2eStatus)) acSummary = 'At least one AC failed';
 
             core.setOutput('latest_commit', `${latestCommit.data.sha.slice(0, 7)} - ${latestCommit.data.commit.message.split('\n')[0]}`);
             core.setOutput('ci_status', ciStatus);
             core.setOutput('e2e_status', e2eStatus);
-            core.setOutput('ac_status', acStatus);
+            core.setOutput('ac_summary', acSummary);
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -75,8 +70,24 @@ jobs:
           LATEST_COMMIT: ${{ steps.workflow_statuses.outputs.latest_commit }}
           CI_STATUS: ${{ steps.workflow_statuses.outputs.ci_status }}
           E2E_STATUS: ${{ steps.workflow_statuses.outputs.e2e_status }}
-          AC_STATUS: ${{ steps.workflow_statuses.outputs.ac_status }}
-        run: node .github/scripts/real_time_progress_generator.mjs
+          AC_SUMMARY: ${{ steps.workflow_statuses.outputs.ac_summary }}
+        run: node .github/scripts/real_time_progress_generator.js
+
+      - name: Append QA history
+        env:
+          CI_STATUS: ${{ steps.workflow_statuses.outputs.ci_status }}
+          E2E_STATUS: ${{ steps.workflow_statuses.outputs.e2e_status }}
+        run: |
+          node -e "const fs=require('fs'); const path='docs/history/history.json'; const current=fs.existsSync(path)?JSON.parse(fs.readFileSync(path,'utf8')):[]; current.push({date:new Date().toISOString(),ci:process.env.CI_STATUS||'unknown',e2e:process.env.E2E_STATUS||'unknown'}); fs.writeFileSync(path, JSON.stringify(current.slice(-200), null, 2)+'\n');"
+
+      - name: Commit history updates
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/history/history.json progress_summary.txt
+          git diff --cached --quiet || git commit -m "chore(ci): update QA history and progress summary"
+          git push
 
       - name: Comment progress on issue
         if: env.OPENNOVA_ISSUE_NUMBER != ''
