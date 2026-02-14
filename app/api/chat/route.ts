@@ -1,6 +1,7 @@
 import { streamText, convertToModelMessages } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 import { z } from "zod"
+import { chatRateLimiter, createClientIdentifier, rateLimitMaxRequests } from "@/lib/chat-rate-limiter"
 import {
   centsToDollars,
   formatCurrencyFromCents,
@@ -20,17 +21,6 @@ interface PortfolioData {
   stockActions: StockAction[]
   totalBalance: string
 }
-
-function parsePositiveInteger(value: string | undefined, fallback: number) {
-  if (!value) return fallback
-  const parsed = Number.parseInt(value, 10)
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
-  return parsed
-}
-
-const RATE_LIMIT_WINDOW_MS = parsePositiveInteger(process.env.AI_RATE_LIMIT_WINDOW_MS, 60_000)
-const RATE_LIMIT_MAX_REQUESTS = parsePositiveInteger(process.env.AI_RATE_LIMIT_MAX_REQUESTS, 20)
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 
 const accountSchema = z.object({
   id: z.string().min(1).max(100),
@@ -361,69 +351,6 @@ function jsonResponse(payload: unknown, status: number, headers?: HeadersInit) {
   })
 }
 
-function getClientIp(req: Request) {
-  const forwardedFor = req.headers.get("x-forwarded-for")
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() || "unknown"
-  }
-
-  const realIp = req.headers.get("x-real-ip")
-  if (realIp) {
-    return realIp.trim()
-  }
-
-  return "unknown"
-}
-
-function pruneRateLimitStore(now: number) {
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (value.resetAt <= now) {
-      rateLimitStore.delete(key)
-    }
-  }
-}
-
-function enforceRateLimit(ip: string, now = Date.now()) {
-  if (rateLimitStore.size > 1000) {
-    pruneRateLimitStore(now)
-  }
-
-  const current = rateLimitStore.get(ip)
-
-  if (!current || current.resetAt <= now) {
-    rateLimitStore.set(ip, {
-      count: 1,
-      resetAt: now + RATE_LIMIT_WINDOW_MS,
-    })
-
-    return {
-      allowed: true,
-      remaining: RATE_LIMIT_MAX_REQUESTS - 1,
-      resetAt: Math.ceil((now + RATE_LIMIT_WINDOW_MS) / 1000),
-      retryAfterSeconds: 0,
-    }
-  }
-
-  if (current.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: Math.ceil(current.resetAt / 1000),
-      retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
-    }
-  }
-
-  current.count += 1
-  rateLimitStore.set(ip, current)
-
-  return {
-    allowed: true,
-    remaining: Math.max(0, RATE_LIMIT_MAX_REQUESTS - current.count),
-    resetAt: Math.ceil(current.resetAt / 1000),
-    retryAfterSeconds: 0,
-  }
-}
-
 function calculateSummary(accounts: AccountItem[]) {
   const totalSavings = centsToDollars(
     accounts
@@ -470,14 +397,14 @@ export async function POST(req: Request) {
     )
   }
 
-  const rateLimit = enforceRateLimit(getClientIp(req))
+  const rateLimit = chatRateLimiter.enforce(createClientIdentifier(req.headers))
   if (!rateLimit.allowed) {
     return jsonResponse(
       { error: "Too many AI requests. Please retry shortly." },
       429,
       {
         "Retry-After": String(rateLimit.retryAfterSeconds),
-        "X-RateLimit-Limit": String(RATE_LIMIT_MAX_REQUESTS),
+        "X-RateLimit-Limit": String(rateLimitMaxRequests),
         "X-RateLimit-Remaining": String(rateLimit.remaining),
         "X-RateLimit-Reset": String(rateLimit.resetAt),
       }
@@ -617,3 +544,4 @@ Remember: You are their trusted financial advisor with full visibility into thei
 
   return result.toUIMessageStreamResponse()
 }
+
