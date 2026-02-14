@@ -13,7 +13,7 @@ function buildSummary() {
   const latestCommit = process.env.LATEST_COMMIT || 'unknown';
   const ciStatus = process.env.CI_STATUS || 'unknown';
   const e2eStatus = process.env.E2E_STATUS || 'unknown';
-  const acStatus = process.env.AC_STATUS || 'unknown';
+  const acSummary = process.env.AC_SUMMARY || 'unknown';
 
   return [
     '<!-- OPENNOVA_REALTIME_PROGRESS -->',
@@ -30,8 +30,8 @@ function buildSummary() {
     '## E2E status',
     `- ${labelStatus(e2eStatus)}`,
     '',
-    '## AC status',
-    `- ${labelStatus(acStatus)}`,
+    '## AC summary',
+    `- ${acSummary}`,
     '',
   ].join('\n');
 }

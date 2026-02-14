@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenNova QA Dashboard</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; color: #111827; }
+      h1 { margin-bottom: 0.5rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0 2rem; }
+      .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; border-bottom: 1px solid #e5e7eb; padding: 0.5rem; }
+      code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>OpenNova QA Dashboard</h1>
+    <p>Continuous quality signals for CI, E2E and Acceptance Criteria.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>CI Status</h2>
+        <img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/LazyBacO/OpenNova-Finance/ci.yml?branch=main&label=CI" />
+      </div>
+      <div class="card">
+        <h2>E2E Status</h2>
+        <img alt="E2E status" src="https://img.shields.io/github/actions/workflow/status/LazyBacO/OpenNova-Finance/e2e.yml?branch=main&label=E2E" />
+      </div>
+      <div class="card">
+        <h2>AC Status</h2>
+        <img alt="AC status" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/LazyBacO/OpenNova-Finance/main/docs/qa-dashboard/ac-status.json" />
+      </div>
+    </div>
+
+    <h2>Latest QA history</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>CI</th><th>E2E</th></tr>
+      </thead>
+      <tbody id="history-body">
+        <tr><td colspan="3">Loading history…</td></tr>
+      </tbody>
+    </table>
+
+    <script>
+      async function loadHistory() {
+        const body = document.getElementById('history-body');
+        try {
+          const response = await fetch('../history/history.json', { cache: 'no-store' });
+          const rows = await response.json();
+          if (!Array.isArray(rows) || rows.length === 0) {
+            body.innerHTML = '<tr><td colspan="3">No history yet</td></tr>';
+            return;
+          }
+
+          body.innerHTML = rows
+            .slice(-20)
+            .reverse()
+            .map((entry) => `<tr><td><code>${entry.date || 'n/a'}</code></td><td>${entry.ci || 'unknown'}</td><td>${entry.e2e || 'unknown'}</td></tr>`)
+            .join('');
+        } catch (error) {
+          body.innerHTML = '<tr><td colspan="3">Unable to load history</td></tr>';
+        }
+      }
+
+      loadHistory();
+    </script>
+  </body>
+</html>
