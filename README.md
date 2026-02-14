@@ -352,7 +352,7 @@ pnpm build
 ## Securite
 
 - `OPENAI_API_KEY` n'est jamais lue depuis le client.
-- `/api/chat` refuse les payloads invalides (Zod) et applique un rate limit.
+- `/api/chat` refuse les payloads invalides (Zod) et applique un rate limit avec identification client robuste (IP proxy/CDN puis fallback user-agent hache).
 - `/api/trading/orders` supporte l'idempotence pour eviter les doubles executions.
 - Si `NOTIFICATION_CRON_SECRET` est defini, `/api/notification-cron` exige:
   - `x-cron-secret: <secret>` ou

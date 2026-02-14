@@ -16,6 +16,7 @@ vi.mock("@ai-sdk/openai", () => ({
 }))
 
 import { POST } from "@/app/api/chat/route"
+import { chatRateLimiter } from "@/lib/chat-rate-limiter"
 
 describe("/api/chat", () => {
   const previousApiKey = process.env.OPENAI_API_KEY
@@ -23,6 +24,7 @@ describe("/api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.OPENAI_API_KEY = previousApiKey
+    chatRateLimiter.clear()
   })
 
   it("returns 500 when OPENAI_API_KEY is missing", async () => {
@@ -168,5 +170,128 @@ describe("/api/chat", () => {
     const streamInput = mocks.streamText.mock.calls[0]?.[0]
     expect(streamInput?.system).toContain("AI Finance Intelligence Layer")
     expect(streamInput?.system).toContain("Build emergency buffer")
+  })
+
+  it("returns 429 when rate limit is exceeded for a client identifier", async () => {
+    process.env.OPENAI_API_KEY = "test-key"
+
+    const modelFactory = vi.fn(() => "mock-model")
+    mocks.createOpenAI.mockReturnValue(modelFactory)
+    mocks.convertToModelMessages.mockResolvedValue([])
+    mocks.streamText.mockReturnValue({
+      toUIMessageStreamResponse: () => new Response("ok", { status: 200 }),
+    })
+
+    const payload = {
+      messages: [{ role: "user", parts: [{ type: "text", text: "status" }] }],
+    }
+
+    for (let i = 0; i < 20; i += 1) {
+      const response = await POST(
+        new Request("http://localhost/api/chat", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": "9.8.7.6",
+          },
+          body: JSON.stringify(payload),
+        })
+      )
+
+      expect(response.status).toBe(200)
+    }
+
+    const blocked = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "9.8.7.6",
+        },
+        body: JSON.stringify(payload),
+      })
+    )
+
+    expect(blocked.status).toBe(429)
+    expect(blocked.headers.get("Retry-After")).toBeTruthy()
+    expect(blocked.headers.get("X-RateLimit-Remaining")).toBe("0")
+  })
+
+  it("uses user-agent as fallback identifier when no ip headers are provided", async () => {
+    process.env.OPENAI_API_KEY = "test-key"
+
+    const modelFactory = vi.fn(() => "mock-model")
+    mocks.createOpenAI.mockReturnValue(modelFactory)
+    mocks.convertToModelMessages.mockResolvedValue([])
+    mocks.streamText.mockReturnValue({
+      toUIMessageStreamResponse: () => new Response("ok", { status: 200 }),
+    })
+
+    const requestForAgent = (agent: string) =>
+      POST(
+        new Request("http://localhost/api/chat", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "user-agent": agent,
+          },
+          body: JSON.stringify({
+            messages: [{ role: "user", parts: [{ type: "text", text: "status" }] }],
+          }),
+        })
+      )
+
+    for (let i = 0; i < 20; i += 1) {
+      const okResponse = await requestForAgent("agent-a")
+      expect(okResponse.status).toBe(200)
+    }
+
+    const blocked = await requestForAgent("agent-a")
+    expect(blocked.status).toBe(429)
+
+    const differentClient = await requestForAgent("agent-b")
+    expect(differentClient.status).toBe(200)
+  })
+
+  it("ignores unknown x-forwarded-for tokens and uses the first valid ip", async () => {
+    process.env.OPENAI_API_KEY = "test-key"
+
+    const modelFactory = vi.fn(() => "mock-model")
+    mocks.createOpenAI.mockReturnValue(modelFactory)
+    mocks.convertToModelMessages.mockResolvedValue([])
+    mocks.streamText.mockReturnValue({
+      toUIMessageStreamResponse: () => new Response("ok", { status: 200 }),
+    })
+
+    const payload = {
+      messages: [{ role: "user", parts: [{ type: "text", text: "health" }] }],
+    }
+
+    for (let i = 0; i < 20; i += 1) {
+      const response = await POST(
+        new Request("http://localhost/api/chat", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": "unknown, 3.3.3.3, 9.9.9.9",
+          },
+          body: JSON.stringify(payload),
+        })
+      )
+      expect(response.status).toBe(200)
+    }
+
+    const blocked = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "3.3.3.3",
+        },
+        body: JSON.stringify(payload),
+      })
+    )
+
+    expect(blocked.status).toBe(429)
   })
 })
