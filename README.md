@@ -6,6 +6,10 @@
 [![AI SDK](https://img.shields.io/badge/Vercel%20AI%20SDK-6.x-black)](https://sdk.vercel.ai/)
 [![License](https://img.shields.io/badge/License-Private-red)](#)
 
+[![CI](https://img.shields.io/github/actions/workflow/status/LazyBacO/OpenNova-Finance/ci.yml?branch=main&label=CI)](https://github.com/LazyBacO/OpenNova-Finance/actions/workflows/ci.yml)
+[![E2E](https://img.shields.io/github/actions/workflow/status/LazyBacO/OpenNova-Finance/e2e.yml?branch=main&label=E2E)](https://github.com/LazyBacO/OpenNova-Finance/actions/workflows/e2e.yml)
+[![AC PASS/FAIL](https://img.shields.io/github/actions/workflow/status/LazyBacO/OpenNova-Finance/e2e.yml?branch=main&label=AC%20PASS%2FFAIL)](https://github.com/LazyBacO/OpenNova-Finance/actions/workflows/e2e.yml)
+
 OpenNova Finance est une application de pilotage financier augmentee par IA (GPT-5.3-Codex):
 - vision globale du portefeuille (comptes, transactions, objectifs, actions),
 - trading paper avec garde-fous de risque institutionnels,
@@ -360,3 +364,8 @@ pnpm build
 - `OPENNOVA_ARCHITECTURE.md` - schema architecture
 - `OPENNOVA_QUICKSTART.md` - guide rapide
 - `AI_SETUP.md` - setup IA minimal
+
+## QA
+
+- Dashboard QA (GitHub Pages): `https://lazybaco.github.io/OpenNova-Finance/qa-dashboard/`
+- Historique des runs QA: `docs/history/history.json`

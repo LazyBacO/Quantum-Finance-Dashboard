@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -39,15 +39,17 @@ jobs:
       - name: Build application
         run: pnpm build
 
+
       - name: Run E2E tests
-        id: run_e2e
         run: pnpm e2e
         env:
           CI: true
 
-      - name: Generate AC status report
+      - name: Generate AC results and reports
         if: always()
-        run: node .github/scripts/ac_status_reporter.mjs
+        run: |
+          node .github/scripts/extract_ac_results.js
+          node .github/scripts/ac_status_reporter.js
 
       - name: Upload Playwright report
         if: always()
@@ -57,8 +59,10 @@ jobs:
           path: |
             playwright-report
             test-results
+            ac-results.json
             ac_status.md
             ac_pr_comment.md
+            docs/qa-dashboard/ac-status.json
           if-no-files-found: warn
 
       - name: Comment AC status on PR
@@ -67,3 +71,12 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: ac_pr_comment.md
+
+      - name: Update AC badge file on main
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/qa-dashboard/ac-status.json
+          git diff --cached --quiet || git commit -m "chore(ci): update AC badge status"
+          git push
