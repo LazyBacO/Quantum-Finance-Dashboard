@@ -2,7 +2,7 @@ name: Real-time progress
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,8 @@ jobs:
       - name: Generate progress summary
         run: node .github/scripts/real_time_progress_generator.js
 
-      - name: Upsert progress comment
+      - name: Comment progress on issue
+        if: env.OPENNOVA_ISSUE_NUMBER != ''
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ env.OPENNOVA_ISSUE_NUMBER }}

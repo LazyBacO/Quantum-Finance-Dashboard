@@ -4,7 +4,7 @@
 
 ## Tests CI
 
-## Acceptance Tests (proxy)
+## Acceptance Tests
 
 ## Risques
 

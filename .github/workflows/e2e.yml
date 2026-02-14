@@ -2,9 +2,7 @@ name: E2E
 
 on:
   pull_request:
-    branches: [main]
   push:
-    branches: [main]
 
 jobs:
   e2e:
@@ -29,34 +27,36 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Detect E2E script
-        id: detect
-        shell: bash
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Start application in background
         run: |
-          if pnpm pkg get scripts.e2e | grep -qv 'null'; then
-            echo "has_e2e=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_e2e=false" >> "$GITHUB_OUTPUT"
-          fi
+          pnpm start > /tmp/opennova-app.log 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000 >/dev/null; then
+              echo "Application is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Application did not start in time"
+          cat /tmp/opennova-app.log
+          exit 1
 
       - name: Run E2E tests
-        if: steps.detect.outputs.has_e2e == 'true'
         run: pnpm e2e
+        env:
+          CI: true
 
-      - name: Create placeholder report
-        if: steps.detect.outputs.has_e2e != 'true'
-        run: |
-          mkdir -p test-results
-          {
-            echo "No E2E tests configured yet."
-            echo "Expected command: pnpm e2e"
-          } > test-results/e2e-placeholder.txt
-
-      - name: Upload E2E artifact
+      - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-report
+          name: playwright-report
           path: |
             playwright-report
             test-results
