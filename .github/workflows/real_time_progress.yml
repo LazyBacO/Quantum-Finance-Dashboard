@@ -20,13 +20,63 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Collect workflow statuses
+        id: workflow_statuses
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const latestCommit = await github.rest.repos.getCommit({
+              owner,
+              repo,
+              ref: 'main',
+            });
+
+            const workflows = await github.rest.actions.listRepoWorkflows({ owner, repo });
+            const byName = Object.fromEntries(workflows.data.workflows.map((wf) => [wf.name, wf.id]));
+
+            async function latestConclusion(workflowName) {
+              const workflow_id = byName[workflowName];
+              if (!workflow_id) return 'unknown';
+
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id,
+                branch: 'main',
+                per_page: 1,
+              });
+
+              const run = runs.data.workflow_runs[0];
+              return run?.conclusion || run?.status || 'unknown';
+            }
+
+            const ciStatus = await latestConclusion('CI');
+            const e2eStatus = await latestConclusion('E2E');
+
+            let acStatus = 'unknown';
+            if (e2eStatus === 'success') acStatus = 'pass';
+            if (['failure', 'cancelled', 'timed_out'].includes(e2eStatus)) acStatus = 'fail';
+
+            core.setOutput('latest_commit', `${latestCommit.data.sha.slice(0, 7)} - ${latestCommit.data.commit.message.split('\n')[0]}`);
+            core.setOutput('ci_status', ciStatus);
+            core.setOutput('e2e_status', e2eStatus);
+            core.setOutput('ac_status', acStatus);
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Generate progress summary
-        run: node .github/scripts/real_time_progress_generator.js
+        env:
+          LATEST_COMMIT: ${{ steps.workflow_statuses.outputs.latest_commit }}
+          CI_STATUS: ${{ steps.workflow_statuses.outputs.ci_status }}
+          E2E_STATUS: ${{ steps.workflow_statuses.outputs.e2e_status }}
+          AC_STATUS: ${{ steps.workflow_statuses.outputs.ac_status }}
+        run: node .github/scripts/real_time_progress_generator.mjs
 
       - name: Comment progress on issue
         if: env.OPENNOVA_ISSUE_NUMBER != ''

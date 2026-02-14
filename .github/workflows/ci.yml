@@ -36,7 +36,17 @@ jobs:
         run: pnpm lint
 
       - name: Tests
-        run: pnpm test
+        run: pnpm test -- --reporter=default --reporter=junit --outputFile=./test-results/vitest-junit.xml
 
       - name: Build
         run: pnpm build
+
+      - name: Upload CI failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-artifacts
+          path: |
+            test-results
+            .next
+          if-no-files-found: warn

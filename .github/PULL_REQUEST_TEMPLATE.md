@@ -2,10 +2,12 @@
 
 ## Changements
 
-## Tests CI
+## CI Status
 
 ## Acceptance Tests
 
-## Risques
+## Performance impact
+
+## Risks
 
 ## Rollback plan

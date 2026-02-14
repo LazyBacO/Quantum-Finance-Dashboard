@@ -2,7 +2,13 @@ name: E2E
 
 on:
   pull_request:
+    branches: [main]
   push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   e2e:
@@ -33,24 +39,15 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      - name: Start application in background
-        run: |
-          pnpm start > /tmp/opennova-app.log 2>&1 &
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3000 >/dev/null; then
-              echo "Application is ready"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Application did not start in time"
-          cat /tmp/opennova-app.log
-          exit 1
-
       - name: Run E2E tests
+        id: run_e2e
         run: pnpm e2e
         env:
           CI: true
+
+      - name: Generate AC status report
+        if: always()
+        run: node .github/scripts/ac_status_reporter.mjs
 
       - name: Upload Playwright report
         if: always()
@@ -60,4 +57,13 @@ jobs:
           path: |
             playwright-report
             test-results
+            ac_status.md
+            ac_pr_comment.md
           if-no-files-found: warn
+
+      - name: Comment AC status on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: ac_pr_comment.md
