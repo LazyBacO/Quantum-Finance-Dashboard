@@ -1,16 +1,16 @@
 <!-- OPENNOVA_REALTIME_PROGRESS -->
 # OpenNova - Real-time progress
 
-Date: 2026-02-14T14:14:33.041Z
+Date: 2026-02-14T14:33:00.550Z
 
 ## Last commit
-969c91c - Revise acceptance criteria format and add notes
+c6fd30e - Update CI workflow to include AC table updates
 
 ## CI status
-- PASS ✅
+- FAIL ❌
 
 ## E2E status
-- PASS ✅
+- RUNNING ⏳
 
 ## AC summary
-- AC-01 PASS, AC-02 PASS
+- unknown
