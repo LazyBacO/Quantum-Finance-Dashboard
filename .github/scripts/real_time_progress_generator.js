@@ -1,5 +1,5 @@
-const fs = require('node:fs');
-const { execSync } = require('node:child_process');
+import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
 function run(command) {
   return execSync(command, { encoding: 'utf8' }).trim();
