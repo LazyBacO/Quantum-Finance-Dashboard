@@ -237,6 +237,7 @@ Ces headers sont utilises automatiquement par le client interne quand l'utilisat
 ### Chat IA
 - `POST /api/chat`
 - Validation Zod + rate limit + key serveur uniquement
+- Reponses incluent `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` et `Cache-Control: no-store`
 
 ### Trading
 - `GET /api/trading/overview`

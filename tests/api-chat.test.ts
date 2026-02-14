@@ -108,7 +108,8 @@ describe("/api/chat", () => {
     mocks.createOpenAI.mockReturnValue(modelFactory)
     mocks.convertToModelMessages.mockResolvedValue([])
     mocks.streamText.mockReturnValue({
-      toUIMessageStreamResponse: () => new Response("ok", { status: 200 }),
+      toUIMessageStreamResponse: (init?: ResponseInit) =>
+        new Response("ok", { status: 200, headers: init?.headers }),
     })
 
     const response = await POST(
@@ -170,6 +171,34 @@ describe("/api/chat", () => {
     const streamInput = mocks.streamText.mock.calls[0]?.[0]
     expect(streamInput?.system).toContain("AI Finance Intelligence Layer")
     expect(streamInput?.system).toContain("Build emergency buffer")
+    expect(response.headers.get("X-RateLimit-Limit")).toBeTruthy()
+    expect(response.headers.get("X-RateLimit-Remaining")).toBeTruthy()
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+  })
+
+  it("returns 502 when stream provider throws", async () => {
+    process.env.OPENAI_API_KEY = "test-key"
+
+    const modelFactory = vi.fn(() => "mock-model")
+    mocks.createOpenAI.mockReturnValue(modelFactory)
+    mocks.convertToModelMessages.mockResolvedValue([])
+    mocks.streamText.mockImplementation(() => {
+      throw new Error("provider down")
+    })
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": "1.1.1.1" },
+        body: JSON.stringify({
+          messages: [{ role: "user", parts: [{ type: "text", text: "ping" }] }],
+        }),
+      })
+    )
+
+    expect(response.status).toBe(502)
+    expect(response.headers.get("X-RateLimit-Limit")).toBeTruthy()
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
   })
 
   it("returns 429 when rate limit is exceeded for a client identifier", async () => {
