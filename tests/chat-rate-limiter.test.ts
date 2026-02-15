@@ -46,6 +46,36 @@ describe("chat-rate-limiter", () => {
     expect(first).not.toBe(third)
   })
 
+  it("supports deterministic salt override for user-agent fallback", () => {
+    const headers = new Headers({ "user-agent": "agent-42" })
+
+    const withSaltA = createClientIdentifier(headers, {
+      trustProxyHeaders: false,
+      userAgentSalt: "salt-a",
+    })
+    const withSaltB = createClientIdentifier(headers, {
+      trustProxyHeaders: false,
+      userAgentSalt: "salt-b",
+    })
+
+    expect(withSaltA).not.toBe(withSaltB)
+  })
+
+  it("can ignore proxy headers when trustProxyHeaders is false", () => {
+    const headers = new Headers({
+      forwarded: "for=203.0.113.10",
+      "x-forwarded-for": "198.51.100.1",
+      "x-real-ip": "192.0.2.88",
+    })
+
+    const identifier = createClientIdentifier(headers, {
+      trustProxyHeaders: false,
+      userAgentSalt: "test",
+    })
+
+    expect(identifier).toBe("192.0.2.88")
+  })
+
   it("limits forwarded list parsing to prevent oversized header abuse", () => {
     const noisyEntries = Array.from({ length: 30 }, () => "unknown")
     noisyEntries.push("198.51.100.44")
@@ -61,6 +91,7 @@ describe("chat-rate-limiter", () => {
   it("rejects out-of-bounds limiter configuration in constructor", () => {
     expect(() => new InMemoryRateLimiter(10, 20)).toThrow()
     expect(() => new InMemoryRateLimiter(60_000, 1000)).toThrow()
+    expect(() => new InMemoryRateLimiter(60_000, 20, 10)).toThrow()
   })
 
   it("enforces max requests and resets after window", () => {
@@ -86,5 +117,17 @@ describe("chat-rate-limiter", () => {
 
     limiter.clearExpired(2101)
     expect(limiter.size()).toBe(0)
+  })
+
+  it("evicts oldest entries when max keys limit is reached", () => {
+    const limiter = new InMemoryRateLimiter(10_000, 2, 100)
+
+    for (let index = 0; index < 100; index += 1) {
+      limiter.enforce(`client-${index}`, 1000 + index)
+    }
+    limiter.enforce("client-101", 2000)
+
+    expect(limiter.size()).toBe(100)
+    expect(limiter.enforce("client-0", 2001).allowed).toBe(true)
   })
 })

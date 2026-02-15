@@ -93,6 +93,7 @@ AI_RATE_LIMIT_WINDOW_MS=60000
 AI_RATE_LIMIT_MAX_REQUESTS=20
 AI_RATE_LIMIT_TRUST_PROXY_HEADERS=true
 AI_RATE_LIMIT_USER_AGENT_SALT=change_me
+AI_RATE_LIMIT_MAX_KEYS=10000
 
 # Optionnel (active les donnees de marche reelles Massive/Polygon)
 MASSIVE_API_KEY=your_massive_api_key
@@ -221,6 +222,7 @@ Ces headers sont utilises automatiquement par le client interne quand l'utilisat
 | `AI_RATE_LIMIT_MAX_REQUESTS` | Non | Max de requetes IA par fenetre |
 | `AI_RATE_LIMIT_TRUST_PROXY_HEADERS` | Non | Active/desactive l'usage des headers proxy (`Forwarded`, `x-forwarded-for`) |
 | `AI_RATE_LIMIT_USER_AGENT_SALT` | Non | Salt serveur pour hachage du fallback user-agent |
+| `AI_RATE_LIMIT_MAX_KEYS` | Non | Nombre maximal de buckets rate-limit gardes en memoire |
 | `MASSIVE_API_KEY` | Non | Cle Massive (Polygon) pour donnees de marche reelles |
 | `MASSIVE_LIVE_DATA` | Non | Active/desactive le mode live (`true` par defaut si cle presente) |
 | `MASSIVE_API_BASE_URL` | Non | URL API Massive (defaut: `https://api.massive.com`) |
@@ -357,7 +359,7 @@ pnpm build
 ## Securite
 
 - `OPENAI_API_KEY` n'est jamais lue depuis le client.
-- `/api/chat` refuse les payloads invalides (Zod) et applique un rate limit avec identification client robuste (IP proxy/CDN puis fallback user-agent hache).
+- `/api/chat` refuse les payloads invalides (Zod) et applique un rate limit avec identification client robuste (`Forwarded`/IP proxy/CDN, puis fallback user-agent hache).
 - `/api/trading/orders` supporte l'idempotence pour eviter les doubles executions.
 - Si `NOTIFICATION_CRON_SECRET` est defini, `/api/notification-cron` exige:
   - `x-cron-secret: <secret>` ou
