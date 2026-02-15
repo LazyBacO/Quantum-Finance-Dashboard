@@ -143,5 +143,145 @@
     "date": "2026-02-14T19:54:59.499Z",
     "ci": "success",
     "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T20:28:32.522Z",
+    "ci": "success",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T20:53:16.428Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T21:26:31.650Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T21:49:11.731Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T22:00:39.436Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T22:40:02.366Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T22:58:46.162Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T23:33:42.884Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-14T23:54:34.270Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T02:27:26.408Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T04:34:37.835Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T05:42:58.210Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T06:34:16.097Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T07:25:11.928Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T07:55:58.662Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T08:38:34.042Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T09:04:11.201Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T09:45:10.049Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T10:01:00.105Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T10:45:43.007Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T11:02:55.489Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T11:34:07.978Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T11:52:42.299Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T12:54:36.838Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T13:47:28.243Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T14:15:33.941Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T14:48:42.607Z",
+    "ci": "failure",
+    "e2e": "success"
+  },
+  {
+    "date": "2026-02-15T15:13:11.504Z",
+    "ci": "failure",
+    "e2e": "success"
   }
 ]
