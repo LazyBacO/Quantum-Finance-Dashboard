@@ -36,7 +36,11 @@ function parseBoundedInteger(
   options: { min: number; max: number }
 ) {
   if (!value) return fallback
-  const parsed = Number.parseInt(value, 10)
+
+  const trimmed = value.trim()
+  if (!/^-?\d+$/.test(trimmed)) return fallback
+
+  const parsed = Number.parseInt(trimmed, 10)
   if (!Number.isFinite(parsed)) return fallback
   if (parsed < options.min || parsed > options.max) return fallback
   return parsed
@@ -110,14 +114,17 @@ interface ClientIdentifierOptions {
   userAgentSalt: string
 }
 
-export function createClientIdentifier(
-  headers: Headers,
-  options: ClientIdentifierOptions = {
-    trustProxyHeaders: chatRateLimitConfig.trustProxyHeaders,
-    userAgentSalt: chatRateLimitConfig.userAgentSalt,
+function resolveClientIdentifierOptions(options?: Partial<ClientIdentifierOptions>): ClientIdentifierOptions {
+  return {
+    trustProxyHeaders: options?.trustProxyHeaders ?? chatRateLimitConfig.trustProxyHeaders,
+    userAgentSalt: options?.userAgentSalt?.trim() || chatRateLimitConfig.userAgentSalt,
   }
-) {
-  if (options.trustProxyHeaders) {
+}
+
+export function createClientIdentifier(headers: Headers, options?: Partial<ClientIdentifierOptions>) {
+  const resolvedOptions = resolveClientIdentifierOptions(options)
+
+  if (resolvedOptions.trustProxyHeaders) {
     const fromForwarded = identifierFromForwardedHeader(headers.get("forwarded"))
     if (fromForwarded) return fromForwarded.slice(0, MAX_IDENTIFIER_LENGTH)
 
@@ -135,7 +142,7 @@ export function createClientIdentifier(
 
   const userAgent = headers.get("user-agent")?.trim()
   if (userAgent) {
-    const saltedUserAgent = `${options.userAgentSalt}:${userAgent.slice(0, 256)}`
+    const saltedUserAgent = `${resolvedOptions.userAgentSalt}:${userAgent.slice(0, 256)}`
     return `ua:${hashString(saltedUserAgent)}`
   }
 

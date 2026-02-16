@@ -61,6 +61,18 @@ describe("chat-rate-limiter", () => {
     expect(withSaltA).not.toBe(withSaltB)
   })
 
+  it("falls back to config defaults when partial options are provided", () => {
+    const headers = new Headers({ "user-agent": "agent-42" })
+
+    const defaultIdentifier = createClientIdentifier(headers)
+    const withBlankSalt = createClientIdentifier(headers, {
+      trustProxyHeaders: false,
+      userAgentSalt: "   ",
+    })
+
+    expect(withBlankSalt).toBe(defaultIdentifier)
+  })
+
   it("can ignore proxy headers when trustProxyHeaders is false", () => {
     const headers = new Headers({
       forwarded: "for=203.0.113.10",
