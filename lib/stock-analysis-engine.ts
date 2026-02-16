@@ -100,8 +100,22 @@ export interface StockActionRecord extends StockAction {
   }
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
-const safeDivide = (num: number, den: number, fallback = 0) => (Math.abs(den) < 1e-8 ? fallback : num / den)
+const finiteOr = (value: number, fallback: number) => (Number.isFinite(value) ? value : fallback)
+
+const clamp = (value: number, min: number, max: number) => {
+  const normalizedMin = finiteOr(min, 0)
+  const normalizedMax = finiteOr(max, normalizedMin)
+  const lower = Math.min(normalizedMin, normalizedMax)
+  const upper = Math.max(normalizedMin, normalizedMax)
+  const normalizedValue = finiteOr(value, lower)
+  return Math.min(upper, Math.max(lower, normalizedValue))
+}
+
+const safeDivide = (num: number, den: number, fallback = 0) => {
+  if (!Number.isFinite(num) || !Number.isFinite(den) || Math.abs(den) < 1e-8) return fallback
+  const result = num / den
+  return Number.isFinite(result) ? result : fallback
+}
 
 const normalizePrices = (raw: number[]): number[] =>
   raw.filter((value) => Number.isFinite(value) && value > 0).map((value) => Number(value.toFixed(4)))
@@ -401,21 +415,25 @@ export function analyzeStock(
   fundamental: FundamentalMetrics
 ): StockAIRecommendation {
   const symbol = symbolInput.trim().toUpperCase()
-  const technicalScore = computeTechnicalScore(technical, prices.current)
+  const currentPrice = clamp(finiteOr(prices.current, 0.01), 0.01, Number.MAX_SAFE_INTEGER)
+  const high52week = clamp(finiteOr(prices.high52week, currentPrice), currentPrice, Number.MAX_SAFE_INTEGER)
+  const low52week = clamp(finiteOr(prices.low52week, currentPrice), 0.01, currentPrice)
+
+  const technicalScore = computeTechnicalScore(technical, currentPrice)
   const fundamentalScore = computeFundamentalScore(fundamental)
   const aiScore = technicalScore * 0.45 + fundamentalScore * 0.55
   const signal = signalFromScore(aiScore)
   const riskScore = computeRiskScore(technical, fundamental, prices)
 
-  const meanReversionTarget = technical.bollinger.middle
-  const trendTarget = technical.sma200 * 0.2 + prices.high52week * 0.25 + prices.current * 0.55
-  const rawTarget = signal === "sell" || signal === "strong-sell" ? prices.current * 0.92 : (meanReversionTarget + trendTarget) / 2
-  const priceTarget = Number(clamp(rawTarget, prices.low52week * 0.85, prices.high52week * 1.2).toFixed(2))
+  const meanReversionTarget = finiteOr(technical.bollinger.middle, currentPrice)
+  const trendTarget = finiteOr(technical.sma200, currentPrice) * 0.2 + high52week * 0.25 + currentPrice * 0.55
+  const rawTarget = signal === "sell" || signal === "strong-sell" ? currentPrice * 0.92 : (meanReversionTarget + trendTarget) / 2
+  const priceTarget = Number(clamp(rawTarget, low52week * 0.85, high52week * 1.2).toFixed(2))
 
-  const potentialReturn = safeDivide(priceTarget - prices.current, prices.current) * 100
+  const potentialReturn = safeDivide(priceTarget - currentPrice, currentPrice) * 100
   const stopBufferPct = clamp(0.05 + riskScore / 500, 0.05, 0.2)
-  const stopLoss = Number((prices.current * (1 - stopBufferPct)).toFixed(2))
-  const takeProfit = Number((prices.current * (1 + clamp(Math.abs(potentialReturn) / 100 + 0.04, 0.06, 0.3))).toFixed(2))
+  const stopLoss = Number((currentPrice * (1 - stopBufferPct)).toFixed(2))
+  const takeProfit = Number((currentPrice * (1 + clamp(Math.abs(potentialReturn) / 100 + 0.04, 0.06, 0.3))).toFixed(2))
 
   const confidence = clamp(45 + Math.abs(aiScore - 50) * 0.9 - Math.abs(riskScore - 55) * 0.2, 35, 95)
 
@@ -423,7 +441,7 @@ export function analyzeStock(
     symbol,
     signal,
     confidence: Number(confidence.toFixed(1)),
-    reasonTechnical: getTechnicalReason(technical, prices.current),
+    reasonTechnical: getTechnicalReason(technical, currentPrice),
     reasonFundamental: getFundamentalReason(fundamental),
     priceTarget,
     stopLoss,
