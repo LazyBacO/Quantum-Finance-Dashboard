@@ -13,11 +13,16 @@ if (isWindows) {
 }
 
 const args = process.argv.slice(2)
-const vitestArgs = ["vitest", ...args]
+const vitestCli = path.join(
+  process.cwd(),
+  "node_modules",
+  "vitest",
+  "vitest.mjs",
+)
 
-const child = spawn("pnpm", vitestArgs, {
+const child = spawn(process.execPath, [vitestCli, ...args], {
   stdio: "inherit",
-  shell: isWindows,
+  shell: false,
   env: process.env,
 })
 
