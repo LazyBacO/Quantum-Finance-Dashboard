@@ -155,6 +155,10 @@ Ces headers sont utilises automatiquement par le client interne quand l'utilisat
 
 ## Manuel d'utilisation
 
+## Plan d'amelioration recommande
+
+- Voir `docs/recommandations-amelioration.md` pour un plan priorise en 10 points (fiabilite providers Massive/TwelveData, durcissement trading/idempotence, robustesse `/api/chat`, sync portfolio, observabilite, qualite de test et UX explicable).
+
 ### Etape 1 - Verifier l'agent IA
 
 1. Ouvre le dashboard.
