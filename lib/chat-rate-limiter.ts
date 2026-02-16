@@ -36,7 +36,11 @@ function parseBoundedInteger(
   options: { min: number; max: number }
 ) {
   if (!value) return fallback
-  const parsed = Number.parseInt(value, 10)
+
+  const trimmed = value.trim()
+  if (!/^-?\d+$/.test(trimmed)) return fallback
+
+  const parsed = Number.parseInt(trimmed, 10)
   if (!Number.isFinite(parsed)) return fallback
   if (parsed < options.min || parsed > options.max) return fallback
   return parsed
