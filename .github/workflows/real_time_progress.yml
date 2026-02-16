@@ -2,7 +2,7 @@ name: Real-time progress
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/59 * * * *'
   workflow_dispatch:
 
 permissions:
