@@ -114,14 +114,17 @@ interface ClientIdentifierOptions {
   userAgentSalt: string
 }
 
-export function createClientIdentifier(
-  headers: Headers,
-  options: ClientIdentifierOptions = {
-    trustProxyHeaders: chatRateLimitConfig.trustProxyHeaders,
-    userAgentSalt: chatRateLimitConfig.userAgentSalt,
+function resolveClientIdentifierOptions(options?: Partial<ClientIdentifierOptions>): ClientIdentifierOptions {
+  return {
+    trustProxyHeaders: options?.trustProxyHeaders ?? chatRateLimitConfig.trustProxyHeaders,
+    userAgentSalt: options?.userAgentSalt?.trim() || chatRateLimitConfig.userAgentSalt,
   }
-) {
-  if (options.trustProxyHeaders) {
+}
+
+export function createClientIdentifier(headers: Headers, options?: Partial<ClientIdentifierOptions>) {
+  const resolvedOptions = resolveClientIdentifierOptions(options)
+
+  if (resolvedOptions.trustProxyHeaders) {
     const fromForwarded = identifierFromForwardedHeader(headers.get("forwarded"))
     if (fromForwarded) return fromForwarded.slice(0, MAX_IDENTIFIER_LENGTH)
 
@@ -139,7 +142,7 @@ export function createClientIdentifier(
 
   const userAgent = headers.get("user-agent")?.trim()
   if (userAgent) {
-    const saltedUserAgent = `${options.userAgentSalt}:${userAgent.slice(0, 256)}`
+    const saltedUserAgent = `${resolvedOptions.userAgentSalt}:${userAgent.slice(0, 256)}`
     return `ua:${hashString(saltedUserAgent)}`
   }
 
