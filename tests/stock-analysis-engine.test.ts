@@ -57,5 +57,53 @@ describe("stock analysis engine", () => {
     expect(["strong-buy", "buy", "hold", "sell", "strong-sell"]).toContain(recommendation.signal)
     expect(recommendation.priceTarget).toBeGreaterThan(0)
   })
+
+  it("sanitizes non-finite inputs into deterministic bounded outputs", () => {
+    const recommendation = analyzeStock(
+      "  nvda  ",
+      {
+        symbol: "NVDA",
+        current: Number.NaN,
+        high52week: Number.POSITIVE_INFINITY,
+        low52week: Number.NaN,
+        avgVolume: Number.NaN,
+        marketCap: Number.NaN,
+        pe: Number.NaN,
+        dividend: Number.NaN,
+        beta: Number.NaN,
+      },
+      {
+        sma20: Number.NaN,
+        sma50: Number.NaN,
+        sma200: Number.NaN,
+        rsi14: Number.NaN,
+        macd: { line: Number.NaN, signal: Number.NaN, histogram: Number.NaN },
+        bollinger: { upper: Number.NaN, middle: Number.NaN, lower: Number.NaN },
+        atr: Number.NaN,
+        adx: Number.NaN,
+      },
+      {
+        pe: Number.NaN,
+        pb: Number.NaN,
+        ps: Number.NaN,
+        debt: Number.NaN,
+        roe: Number.NaN,
+        roic: Number.NaN,
+        fcf: Number.NaN,
+        growthRate: Number.NaN,
+      }
+    )
+
+    expect(recommendation.symbol).toBe("NVDA")
+    expect(Number.isFinite(recommendation.confidence)).toBe(true)
+    expect(Number.isFinite(recommendation.riskScore)).toBe(true)
+    expect(Number.isFinite(recommendation.priceTarget)).toBe(true)
+    expect(Number.isFinite(recommendation.potentialReturn)).toBe(true)
+    expect(recommendation.confidence).toBeGreaterThanOrEqual(0)
+    expect(recommendation.confidence).toBeLessThanOrEqual(100)
+    expect(recommendation.riskScore).toBeGreaterThanOrEqual(0)
+    expect(recommendation.riskScore).toBeLessThanOrEqual(100)
+    expect(recommendation.priceTarget).toBeGreaterThan(0)
+  })
 })
 
