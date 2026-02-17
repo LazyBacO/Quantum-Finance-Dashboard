@@ -18,6 +18,7 @@ export default defineConfig({
         command: 'node scripts/start-for-e2e.mjs',
         url: 'http://127.0.0.1:3000',
         reuseExistingServer: !process.env.CI,
-        timeout: 120000,
+        // Allows cold-start runs where we may build before serving the app.
+        timeout: 300000,
       },
 });
