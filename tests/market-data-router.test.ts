@@ -166,24 +166,28 @@ describe("market data router", () => {
 
   it("requires a fresh failure streak after cooldown expires", async () => {
     vi.useFakeTimers()
-    fetchTwelveDataAnalysisContextMock.mockResolvedValue(null)
-    fetchMassiveAnalysisContextMock.mockResolvedValue(null)
 
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    try {
+      fetchTwelveDataAnalysisContextMock.mockResolvedValue(null)
+      fetchMassiveAnalysisContextMock.mockResolvedValue(null)
 
-    expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(3)
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
 
-    vi.advanceTimersByTime(30_001)
+      expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(3)
 
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
-    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      vi.advanceTimersByTime(30_001)
 
-    expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(6)
-    vi.useRealTimers()
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+      await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+
+      expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(6)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
