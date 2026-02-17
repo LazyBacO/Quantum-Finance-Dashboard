@@ -102,6 +102,25 @@ describe("/api/stock-analysis", () => {
     expect(Array.isArray(payload.data?.proactiveSignals)).toBe(true)
   })
 
+  it("accepts caret-prefixed index symbols", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/stock-analysis", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol: "^gspc" }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const payload = (await response.json()) as {
+      success: boolean
+      data?: { report?: { symbol?: string } }
+    }
+
+    expect(payload.success).toBe(true)
+    expect(payload.data?.report?.symbol).toBe("^GSPC")
+  })
+
   it("returns delayed-data uncertainty messaging when provider status is delayed", async () => {
     process.env.MASSIVE_LIVE_DATA = "true"
     process.env.MASSIVE_API_KEY = "test-key"
