@@ -72,6 +72,7 @@ export const POST = async (request: Request) => {
         {
           success: false,
           error: result.message,
+          reason: result.reason,
           provider: "massive",
           symbol: result.symbol,
         },
@@ -97,6 +98,7 @@ export const POST = async (request: Request) => {
       {
         success: false,
         error: result.message,
+        reason: result.reason,
         provider: "twelvedata",
         symbol: result.symbol,
       },
