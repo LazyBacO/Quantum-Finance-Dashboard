@@ -355,7 +355,7 @@ const fetchMassiveFundamentals = async (
       undefined,
       config
     ),
-    fetchMassiveJson<{ results?: Array<{ financials?: unknown }> }>(`/vX/reference/financials`, {
+    fetchMassiveJson<{ results?: Array<{ financials?: unknown }> }>(`/v3/reference/financials`, {
       ticker: symbol,
       timeframe: "annual",
       limit: 2,

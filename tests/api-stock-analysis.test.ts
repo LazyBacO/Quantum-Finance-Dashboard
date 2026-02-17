@@ -37,6 +37,28 @@ describe("/api/stock-analysis", () => {
     expect(response.status).toBe(400)
   })
 
+  it("rejects blank or malformed symbols", async () => {
+    const blankResponse = await POST(
+      new Request("http://localhost/api/stock-analysis", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol: "   " }),
+      })
+    )
+
+    expect(blankResponse.status).toBe(400)
+
+    const malformedResponse = await POST(
+      new Request("http://localhost/api/stock-analysis", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol: "AAPL<script>" }),
+      })
+    )
+
+    expect(malformedResponse.status).toBe(400)
+  })
+
   it("returns full analysis payload for valid request", async () => {
     const response = await POST(
       new Request("http://localhost/api/stock-analysis", {

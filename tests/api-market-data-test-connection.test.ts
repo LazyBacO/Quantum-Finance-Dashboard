@@ -40,6 +40,21 @@ describe("/api/market-data/test-connection", () => {
     expect(response.status).toBe(400)
   })
 
+  it("rejects symbols with unsupported characters", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/market-data/test-connection", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: "massive", symbol: "AAPL$" }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    const payload = (await response.json()) as { success: boolean; error?: string }
+    expect(payload.success).toBe(false)
+    expect(payload.error).toContain("Invalid symbol format")
+  })
+
   it("returns missing key error for Massive without key", async () => {
     const response = await POST(
       new Request("http://localhost/api/market-data/test-connection", {

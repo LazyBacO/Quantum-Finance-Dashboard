@@ -10,13 +10,15 @@ describe("market data config", () => {
     expect(normalizeMarketProvider("auto")).toBe("auto")
     expect(normalizeMarketProvider("twelvedata")).toBe("twelvedata")
     expect(normalizeMarketProvider("massive")).toBe("massive")
+    expect(normalizeMarketProvider("  TwElVeDaTa ")).toBe("twelvedata")
+    expect(normalizeMarketProvider(" MASSIVE ")).toBe("massive")
     expect(normalizeMarketProvider("unknown")).toBe("auto")
   })
 
   it("parses market provider headers with keys", () => {
     const request = new Request("http://localhost/api/test", {
       headers: {
-        "x-market-provider": "twelvedata",
+        "x-market-provider": "  TWELVEDATA  ",
         "x-massive-api-key": "massive-key",
         "x-twelvedata-api-key": "twelve-key",
       },

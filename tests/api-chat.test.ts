@@ -48,6 +48,21 @@ describe("/api/chat", () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  it("returns 400 when request payload is invalid even when OPENAI_API_KEY is missing", async () => {
+    delete process.env.OPENAI_API_KEY
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages: [] }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   it("returns 400 when request payload is invalid", async () => {
     process.env.OPENAI_API_KEY = "test-key"
 

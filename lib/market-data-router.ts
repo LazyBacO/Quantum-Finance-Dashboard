@@ -1,6 +1,7 @@
 import {
   fetchMassiveAnalysisContext,
   getCachedMassiveQuote,
+  isMassiveLiveModeEnabled,
   prefetchMassiveQuotes,
   type MassiveAnalysisContext,
 } from "@/lib/massive-market-data"
@@ -9,6 +10,7 @@ import { normalizeMarketDataRequestConfig } from "@/lib/market-data-config"
 import {
   fetchTwelveDataAnalysisContext,
   getCachedTwelveDataQuote,
+  isTwelveDataLiveModeEnabled,
   prefetchTwelveDataQuotes,
   type TwelveDataAnalysisContext,
 } from "@/lib/twelvedata-market-data"
@@ -35,8 +37,17 @@ export type MarketDataSource =
 const CONTEXT_CACHE_TTL_MS = 10_000
 const PROVIDER_FAILURE_THRESHOLD = 3
 const PROVIDER_COOLDOWN_MS = 30_000
+const MAX_SYMBOL_LENGTH = 24
+const SYMBOL_PATTERN = /^[A-Z0-9^][A-Z0-9.^-]{0,23}$/
 
 type ProviderName = "massive" | "twelvedata"
+
+const isProviderEnabled = (provider: ProviderName, config: MarketDataRequestConfig) => {
+  if (provider === "massive") {
+    return isMassiveLiveModeEnabled(config)
+  }
+  return isTwelveDataLiveModeEnabled(config)
+}
 
 interface ProviderCircuitState {
   consecutiveFailures: number
@@ -54,6 +65,7 @@ const providerCircuitState: Record<ProviderName, ProviderCircuitState> = {
 }
 
 const analysisContextCache = new Map<string, CachedContextEntry>()
+const inflightContextRequests = new Map<string, Promise<{ source: MarketDataSource; context: MarketAnalysisContext } | null>>()
 
 const getProviderOrder = (provider: MarketDataProvider) => {
   if (provider === "twelvedata") return ["twelvedata", "massive"] as const
@@ -83,6 +95,21 @@ const toMarketAnalysisContext = (
   fundamentals: context.fundamentals,
 })
 
+const normalizeSymbol = (symbol: unknown) => {
+  if (typeof symbol !== "string") return ""
+
+  const normalized = symbol.trim().toUpperCase()
+  if (!normalized || normalized.length > MAX_SYMBOL_LENGTH) {
+    return ""
+  }
+
+  if (!SYMBOL_PATTERN.test(normalized)) {
+    return ""
+  }
+
+  return normalized
+}
+
 const getContextCacheKey = (symbol: string, provider: MarketDataProvider) => `${provider}:${symbol}`
 
 const readCachedContext = (symbol: string, provider: MarketDataProvider) => {
@@ -111,6 +138,16 @@ const writeCachedContext = (
 
 const isCircuitOpen = (provider: ProviderName) => providerCircuitState[provider].openedUntilMs > Date.now()
 
+const getFailureCountForProviderAttempt = (provider: ProviderName) => {
+  const state = providerCircuitState[provider]
+  if (state.openedUntilMs > 0 && state.openedUntilMs <= Date.now()) {
+    providerCircuitState[provider] = { consecutiveFailures: 0, openedUntilMs: 0 }
+    return 0
+  }
+
+  return state.consecutiveFailures
+}
+
 const markProviderSuccess = (provider: ProviderName) => {
   providerCircuitState[provider] = {
     consecutiveFailures: 0,
@@ -119,7 +156,7 @@ const markProviderSuccess = (provider: ProviderName) => {
 }
 
 const markProviderFailure = (provider: ProviderName) => {
-  const nextFailures = providerCircuitState[provider].consecutiveFailures + 1
+  const nextFailures = getFailureCountForProviderAttempt(provider) + 1
   providerCircuitState[provider].consecutiveFailures = nextFailures
 
   if (nextFailures >= PROVIDER_FAILURE_THRESHOLD) {
@@ -135,10 +172,17 @@ export const getCachedPreferredMarketQuote = (
   config?: MarketDataRequestConfig
 ) => {
   const normalized = normalizeMarketDataRequestConfig(config)
+  const normalizedSymbol = normalizeSymbol(symbol)
+  if (!normalizedSymbol) {
+    return null
+  }
+
   const order = getProviderOrder(normalized.provider ?? "auto")
   for (const provider of order) {
     const quote =
-      provider === "twelvedata" ? getCachedTwelveDataQuote(symbol) : getCachedMassiveQuote(symbol)
+      provider === "twelvedata"
+        ? getCachedTwelveDataQuote(normalizedSymbol)
+        : getCachedMassiveQuote(normalizedSymbol)
     if (quote !== null) return quote
   }
   return null
@@ -148,12 +192,20 @@ export async function prefetchPreferredMarketQuotes(
   symbolsInput: string[],
   config?: MarketDataRequestConfig
 ) {
+  if (!Array.isArray(symbolsInput) || symbolsInput.length === 0) {
+    return
+  }
+
   const normalized = normalizeMarketDataRequestConfig(config)
-  const symbols = Array.from(new Set(symbolsInput.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)))
+  const symbols = Array.from(new Set(symbolsInput.map((symbol) => normalizeSymbol(symbol)).filter(Boolean)))
   if (symbols.length === 0) return
 
   const order = getProviderOrder(normalized.provider ?? "auto")
   for (const provider of order) {
+    if (!isProviderEnabled(provider, normalized)) {
+      continue
+    }
+
     if (isCircuitOpen(provider)) {
       continue
     }
@@ -180,51 +232,77 @@ export async function fetchPreferredMarketAnalysisContext(
   config?: MarketDataRequestConfig
 ): Promise<{ source: MarketDataSource; context: MarketAnalysisContext } | null> {
   const normalized = normalizeMarketDataRequestConfig(config)
-  const order = getProviderOrder(normalized.provider ?? "auto")
-  const cached = readCachedContext(symbol, normalized.provider ?? "auto")
+  const normalizedSymbol = normalizeSymbol(symbol)
+  if (!normalizedSymbol) {
+    return null
+  }
+
+  const preferredProvider = normalized.provider ?? "auto"
+  const cacheKey = getContextCacheKey(normalizedSymbol, preferredProvider)
+  const order = getProviderOrder(preferredProvider)
+  const cached = readCachedContext(normalizedSymbol, preferredProvider)
   if (cached) {
     return cached
   }
 
-  for (const provider of order) {
-    if (isCircuitOpen(provider)) {
-      continue
-    }
+  const inflight = inflightContextRequests.get(cacheKey)
+  if (inflight) {
+    return inflight
+  }
 
-    if (provider === "twelvedata") {
-      const context = await fetchTwelveDataAnalysisContext(symbol, normalized).catch(() => null)
+  const requestPromise = (async () => {
+    for (const provider of order) {
+      if (!isProviderEnabled(provider, normalized)) {
+        continue
+      }
+
+      if (isCircuitOpen(provider)) {
+        continue
+      }
+
+      if (provider === "twelvedata") {
+        const context = await fetchTwelveDataAnalysisContext(normalizedSymbol, normalized).catch(() => null)
+        if (context) {
+          markProviderSuccess(provider)
+          const value = {
+            source: "twelvedata-live" as const,
+            context: toMarketAnalysisContext(context),
+          }
+          writeCachedContext(normalizedSymbol, preferredProvider, value)
+          return value
+        }
+        markProviderFailure(provider)
+        continue
+      }
+
+      const context = await fetchMassiveAnalysisContext(normalizedSymbol, normalized).catch(() => null)
       if (context) {
         markProviderSuccess(provider)
         const value = {
-          source: "twelvedata-live" as const,
+          source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
           context: toMarketAnalysisContext(context),
         }
-        writeCachedContext(symbol, normalized.provider ?? "auto", value)
+        writeCachedContext(normalizedSymbol, preferredProvider, value)
         return value
       }
+
       markProviderFailure(provider)
-      continue
     }
 
-    const context = await fetchMassiveAnalysisContext(symbol, normalized).catch(() => null)
-    if (context) {
-      markProviderSuccess(provider)
-      const value = {
-        source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
-        context: toMarketAnalysisContext(context),
-      }
-      writeCachedContext(symbol, normalized.provider ?? "auto", value)
-      return value
-    }
+    return null
+  })()
 
-    markProviderFailure(provider)
+  inflightContextRequests.set(cacheKey, requestPromise)
+  try {
+    return await requestPromise
+  } finally {
+    inflightContextRequests.delete(cacheKey)
   }
-
-  return null
 }
 
 export const __resetMarketDataRouterStateForTests = () => {
   analysisContextCache.clear()
+  inflightContextRequests.clear()
   providerCircuitState.massive = { consecutiveFailures: 0, openedUntilMs: 0 }
   providerCircuitState.twelvedata = { consecutiveFailures: 0, openedUntilMs: 0 }
 }
