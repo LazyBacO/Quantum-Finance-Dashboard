@@ -54,6 +54,7 @@ const providerCircuitState: Record<ProviderName, ProviderCircuitState> = {
 }
 
 const analysisContextCache = new Map<string, CachedContextEntry>()
+const inflightContextRequests = new Map<string, Promise<{ source: MarketDataSource; context: MarketAnalysisContext } | null>>()
 
 const getProviderOrder = (provider: MarketDataProvider) => {
   if (provider === "twelvedata") return ["twelvedata", "massive"] as const
@@ -194,51 +195,68 @@ export async function fetchPreferredMarketAnalysisContext(
     return null
   }
 
-  const order = getProviderOrder(normalized.provider ?? "auto")
-  const cached = readCachedContext(normalizedSymbol, normalized.provider ?? "auto")
+  const preferredProvider = normalized.provider ?? "auto"
+  const cacheKey = getContextCacheKey(normalizedSymbol, preferredProvider)
+  const order = getProviderOrder(preferredProvider)
+  const cached = readCachedContext(normalizedSymbol, preferredProvider)
   if (cached) {
     return cached
   }
 
-  for (const provider of order) {
-    if (isCircuitOpen(provider)) {
-      continue
-    }
+  const inflight = inflightContextRequests.get(cacheKey)
+  if (inflight) {
+    return inflight
+  }
 
-    if (provider === "twelvedata") {
-      const context = await fetchTwelveDataAnalysisContext(normalizedSymbol, normalized).catch(() => null)
+  const requestPromise = (async () => {
+    for (const provider of order) {
+      if (isCircuitOpen(provider)) {
+        continue
+      }
+
+      if (provider === "twelvedata") {
+        const context = await fetchTwelveDataAnalysisContext(normalizedSymbol, normalized).catch(() => null)
+        if (context) {
+          markProviderSuccess(provider)
+          const value = {
+            source: "twelvedata-live" as const,
+            context: toMarketAnalysisContext(context),
+          }
+          writeCachedContext(normalizedSymbol, preferredProvider, value)
+          return value
+        }
+        markProviderFailure(provider)
+        continue
+      }
+
+      const context = await fetchMassiveAnalysisContext(normalizedSymbol, normalized).catch(() => null)
       if (context) {
         markProviderSuccess(provider)
         const value = {
-          source: "twelvedata-live" as const,
+          source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
           context: toMarketAnalysisContext(context),
         }
-        writeCachedContext(normalizedSymbol, normalized.provider ?? "auto", value)
+        writeCachedContext(normalizedSymbol, preferredProvider, value)
         return value
       }
+
       markProviderFailure(provider)
-      continue
     }
 
-    const context = await fetchMassiveAnalysisContext(normalizedSymbol, normalized).catch(() => null)
-    if (context) {
-      markProviderSuccess(provider)
-      const value = {
-        source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
-        context: toMarketAnalysisContext(context),
-      }
-      writeCachedContext(normalizedSymbol, normalized.provider ?? "auto", value)
-      return value
-    }
+    return null
+  })()
 
-    markProviderFailure(provider)
+  inflightContextRequests.set(cacheKey, requestPromise)
+  try {
+    return await requestPromise
+  } finally {
+    inflightContextRequests.delete(cacheKey)
   }
-
-  return null
 }
 
 export const __resetMarketDataRouterStateForTests = () => {
   analysisContextCache.clear()
+  inflightContextRequests.clear()
   providerCircuitState.massive = { consecutiveFailures: 0, openedUntilMs: 0 }
   providerCircuitState.twelvedata = { consecutiveFailures: 0, openedUntilMs: 0 }
 }

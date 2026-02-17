@@ -108,6 +108,28 @@ describe("market data router", () => {
     expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(1)
   })
 
+  it("deduplicates concurrent context requests for the same symbol/provider", async () => {
+    let resolveContext: ((value: typeof liveContext | null) => void) | null = null
+    fetchMassiveAnalysisContextMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveContext = resolve
+        })
+    )
+
+    const firstPromise = fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+    const secondPromise = fetchPreferredMarketAnalysisContext(" aapl ", { provider: "massive" })
+
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(1)
+
+    resolveContext?.(liveContext)
+
+    const [first, second] = await Promise.all([firstPromise, secondPromise])
+    expect(first?.context.symbol).toBe("AAPL")
+    expect(second?.context.symbol).toBe("AAPL")
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(1)
+  })
+
   it("normalizes symbol casing/spacing for cache and provider calls", async () => {
     fetchMassiveAnalysisContextMock.mockResolvedValue(liveContext)
 
