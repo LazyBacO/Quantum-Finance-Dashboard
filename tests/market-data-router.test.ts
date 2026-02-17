@@ -72,6 +72,19 @@ describe("market data router", () => {
     expect(getCachedPreferredMarketQuote("UNKNOWN", { provider: "auto" })).toBeNull()
   })
 
+  it("handles non-string symbols safely", async () => {
+    expect(() =>
+      getCachedPreferredMarketQuote(undefined as unknown as string, { provider: "auto" })
+    ).not.toThrow()
+    expect(
+      getCachedPreferredMarketQuote(undefined as unknown as string, { provider: "auto" })
+    ).toBeNull()
+
+    await expect(
+      fetchPreferredMarketAnalysisContext(undefined as unknown as string, { provider: "auto" })
+    ).resolves.toBeNull()
+  })
+
   it("returns null analysis context when no provider key is available", async () => {
     const previousMassive = process.env.MASSIVE_API_KEY
     const previousPolygon = process.env.POLYGON_API_KEY

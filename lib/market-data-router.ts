@@ -84,7 +84,10 @@ const toMarketAnalysisContext = (
   fundamentals: context.fundamentals,
 })
 
-const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase()
+const normalizeSymbol = (symbol: unknown) => {
+  if (typeof symbol !== "string") return ""
+  return symbol.trim().toUpperCase()
+}
 
 const getContextCacheKey = (symbol: string, provider: MarketDataProvider) => `${provider}:${symbol}`
 
@@ -169,7 +172,7 @@ export async function prefetchPreferredMarketQuotes(
   config?: MarketDataRequestConfig
 ) {
   const normalized = normalizeMarketDataRequestConfig(config)
-  const symbols = Array.from(new Set(symbolsInput.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)))
+  const symbols = Array.from(new Set(symbolsInput.map((symbol) => normalizeSymbol(symbol)).filter(Boolean)))
   if (symbols.length === 0) return
 
   const order = getProviderOrder(normalized.provider ?? "auto")
