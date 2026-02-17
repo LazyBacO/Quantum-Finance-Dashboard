@@ -179,6 +179,22 @@ describe("market data router", () => {
     expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(1)
   })
 
+  it("does not reuse cached context across different market-data auth scopes", async () => {
+    fetchMassiveAnalysisContextMock
+      .mockResolvedValueOnce(liveContext)
+      .mockResolvedValueOnce({ ...liveContext, currentPrice: 103 })
+
+    const first = await fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+    const second = await fetchPreferredMarketAnalysisContext("AAPL", {
+      provider: "massive",
+      massiveApiKey: "valid-key",
+    })
+
+    expect(first?.context.currentPrice).toBe(102)
+    expect(second?.context.currentPrice).toBe(103)
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(2)
+  })
+
   it("deduplicates concurrent context requests for the same symbol/provider", async () => {
     const deferred = createDeferred<typeof liveContext | null>()
     fetchMassiveAnalysisContextMock.mockImplementation(() => deferred.promise)
