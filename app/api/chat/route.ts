@@ -403,20 +403,6 @@ function calculateSummary(accounts: AccountItem[]) {
 }
 
 export async function POST(req: Request) {
-  const key = process.env.OPENAI_API_KEY
-  if (!key) {
-    return jsonResponse(
-      {
-        error:
-          "AI assistant is temporarily unavailable because no provider key is configured on the server.",
-        degraded: true,
-        retryable: true,
-      },
-      503,
-      { "Cache-Control": "no-store" }
-    )
-  }
-
   const rateLimit = chatRateLimiter.enforce(createClientIdentifier(req.headers))
   if (!rateLimit.allowed) {
     return jsonResponse(
@@ -441,6 +427,20 @@ export async function POST(req: Request) {
         details: parsedPayload.error.issues.slice(0, 3).map((issue) => issue.message),
       },
       400
+    )
+  }
+
+  const key = process.env.OPENAI_API_KEY
+  if (!key) {
+    return jsonResponse(
+      {
+        error:
+          "AI assistant is temporarily unavailable because no provider key is configured on the server.",
+        degraded: true,
+        retryable: true,
+      },
+      503,
+      { "Cache-Control": "no-store" }
     )
   }
 
