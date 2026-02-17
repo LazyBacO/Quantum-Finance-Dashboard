@@ -161,6 +161,11 @@ export const __setCachedTwelveDataQuoteForTests = (
   })
 }
 
+export const __resetTwelveDataCachesForTests = () => {
+  quoteCache.clear()
+  analysisCache.clear()
+}
+
 export async function testTwelveDataConnection(
   config?: MarketDataRequestConfig,
   symbolInput = "AAPL"

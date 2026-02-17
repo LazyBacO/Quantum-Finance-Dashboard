@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import {
+  __resetMassiveCachesForTests,
   __setCachedMassiveQuoteForTests,
   fetchMassiveAnalysisContext,
   getCachedMassiveQuote,
@@ -15,6 +16,7 @@ describe("massive market data", () => {
     process.env.MASSIVE_API_KEY = previousMassiveApiKey
     process.env.POLYGON_API_KEY = previousPolygonApiKey
     process.env.MASSIVE_LIVE_DATA = previousMassiveLiveData
+    __resetMassiveCachesForTests()
   })
 
   it("stays disabled and returns null context when key is missing", async () => {

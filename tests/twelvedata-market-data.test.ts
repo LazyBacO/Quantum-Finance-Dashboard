@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import {
+  __resetTwelveDataCachesForTests,
   __setCachedTwelveDataQuoteForTests,
   fetchTwelveDataAnalysisContext,
   getCachedTwelveDataQuote,
@@ -13,6 +14,7 @@ describe("twelvedata market data", () => {
   afterEach(() => {
     process.env.TWELVEDATA_API_KEY = previousKey
     process.env.TWELVEDATA_LIVE_DATA = previousEnabled
+    __resetTwelveDataCachesForTests()
   })
 
   it("is disabled and returns null when key is missing", async () => {
