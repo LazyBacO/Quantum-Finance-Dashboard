@@ -27,7 +27,7 @@ describe("/api/chat", () => {
     chatRateLimiter.clear()
   })
 
-  it("returns 500 when OPENAI_API_KEY is missing", async () => {
+  it("returns 503 degraded response when OPENAI_API_KEY is missing", async () => {
     delete process.env.OPENAI_API_KEY
 
     const response = await POST(
@@ -40,7 +40,11 @@ describe("/api/chat", () => {
       })
     )
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toMatchObject({
+      degraded: true,
+      retryable: true,
+    })
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 

@@ -408,9 +408,12 @@ export async function POST(req: Request) {
     return jsonResponse(
       {
         error:
-          "Server is missing OPENAI_API_KEY. Configure it in environment variables before using /api/chat.",
+          "AI assistant is temporarily unavailable because no provider key is configured on the server.",
+        degraded: true,
+        retryable: true,
       },
-      500
+      503,
+      { "Cache-Control": "no-store" }
     )
   }
 
