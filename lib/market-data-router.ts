@@ -35,6 +35,8 @@ export type MarketDataSource =
 const CONTEXT_CACHE_TTL_MS = 10_000
 const PROVIDER_FAILURE_THRESHOLD = 3
 const PROVIDER_COOLDOWN_MS = 30_000
+const MAX_SYMBOL_LENGTH = 24
+const SYMBOL_PATTERN = /^[A-Z0-9^][A-Z0-9.^-]{0,23}$/
 
 type ProviderName = "massive" | "twelvedata"
 
@@ -86,7 +88,17 @@ const toMarketAnalysisContext = (
 
 const normalizeSymbol = (symbol: unknown) => {
   if (typeof symbol !== "string") return ""
-  return symbol.trim().toUpperCase()
+
+  const normalized = symbol.trim().toUpperCase()
+  if (!normalized || normalized.length > MAX_SYMBOL_LENGTH) {
+    return ""
+  }
+
+  if (!SYMBOL_PATTERN.test(normalized)) {
+    return ""
+  }
+
+  return normalized
 }
 
 const getContextCacheKey = (symbol: string, provider: MarketDataProvider) => `${provider}:${symbol}`

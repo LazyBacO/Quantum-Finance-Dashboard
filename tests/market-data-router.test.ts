@@ -85,6 +85,17 @@ describe("market data router", () => {
     ).resolves.toBeNull()
   })
 
+  it("rejects malformed symbols before provider calls", async () => {
+    const malformed = "<script>alert(1)</script>"
+    const tooLong = "A".repeat(25)
+
+    await expect(fetchPreferredMarketAnalysisContext(malformed, { provider: "massive" })).resolves.toBeNull()
+    await expect(fetchPreferredMarketAnalysisContext(tooLong, { provider: "massive" })).resolves.toBeNull()
+
+    expect(fetchMassiveAnalysisContextMock).not.toHaveBeenCalled()
+    expect(fetchTwelveDataAnalysisContextMock).not.toHaveBeenCalled()
+  })
+
   it("returns null analysis context when no provider key is available", async () => {
     const previousMassive = process.env.MASSIVE_API_KEY
     const previousPolygon = process.env.POLYGON_API_KEY
