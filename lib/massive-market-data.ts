@@ -242,6 +242,12 @@ export const __setCachedMassiveQuoteForTests = (
   })
 }
 
+export const __resetMassiveCachesForTests = () => {
+  quoteCache.clear()
+  analysisCache.clear()
+  financialCache.clear()
+}
+
 export async function prefetchMassiveQuotes(
   symbolsInput: string[],
   config?: MarketDataRequestConfig
