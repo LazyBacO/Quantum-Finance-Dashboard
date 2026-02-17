@@ -109,20 +109,15 @@ describe("market data router", () => {
   })
 
   it("deduplicates concurrent context requests for the same symbol/provider", async () => {
-    let resolveContext: ((value: typeof liveContext | null) => void) | null = null
-    fetchMassiveAnalysisContextMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveContext = resolve
-        })
-    )
+    const deferred = Promise.withResolvers<typeof liveContext | null>()
+    fetchMassiveAnalysisContextMock.mockImplementation(() => deferred.promise)
 
     const firstPromise = fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
     const secondPromise = fetchPreferredMarketAnalysisContext(" aapl ", { provider: "massive" })
 
     expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(1)
 
-    resolveContext?.(liveContext)
+    deferred.resolve(liveContext)
 
     const [first, second] = await Promise.all([firstPromise, secondPromise])
     expect(first?.context.symbol).toBe("AAPL")
