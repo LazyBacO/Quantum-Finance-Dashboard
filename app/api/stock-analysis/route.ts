@@ -136,6 +136,20 @@ const buildUncertaintyMessages = (
   locale: "fr" | "en",
   dataSource: "twelvedata-live" | "massive-live" | "massive-delayed" | "synthetic"
 ) => {
+  if (dataSource === "massive-delayed") {
+    if (locale === "en") {
+      return [
+        "Market data is delayed: recommendations may lag real-time price moves.",
+        "Validate entry/exit levels against a live quote before placing orders.",
+      ]
+    }
+
+    return [
+      "Les donnees de marche sont differees : les recommandations peuvent etre en retard sur le temps reel.",
+      "Validez les niveaux d'entree/sortie avec une cotation en direct avant execution.",
+    ]
+  }
+
   if (dataSource !== "synthetic") {
     return [] as string[]
   }

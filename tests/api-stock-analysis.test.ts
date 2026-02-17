@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { GET, POST } from "@/app/api/stock-analysis/route"
 
 describe("/api/stock-analysis", () => {
@@ -7,6 +7,7 @@ describe("/api/stock-analysis", () => {
   const previousPolygonApiKey = process.env.POLYGON_API_KEY
   const previousTwelveDataLiveData = process.env.TWELVEDATA_LIVE_DATA
   const previousTwelveDataApiKey = process.env.TWELVEDATA_API_KEY
+  const previousFetch = global.fetch
 
   beforeEach(() => {
     // Keep tests deterministic and network-free
@@ -23,6 +24,8 @@ describe("/api/stock-analysis", () => {
     process.env.POLYGON_API_KEY = previousPolygonApiKey
     process.env.TWELVEDATA_LIVE_DATA = previousTwelveDataLiveData
     process.env.TWELVEDATA_API_KEY = previousTwelveDataApiKey
+    global.fetch = previousFetch
+    vi.restoreAllMocks()
   })
 
   it("returns validation error on invalid payload", async () => {
@@ -97,6 +100,97 @@ describe("/api/stock-analysis", () => {
     expect(payload.data?.uncertaintyMessages?.[0]).toContain("estimations synthetiques")
     expect(payload.data?.entryId).toBeTruthy()
     expect(Array.isArray(payload.data?.proactiveSignals)).toBe(true)
+  })
+
+  it("returns delayed-data uncertainty messaging when provider status is delayed", async () => {
+    process.env.MASSIVE_LIVE_DATA = "true"
+    process.env.MASSIVE_API_KEY = "test-key"
+
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes("/v2/aggs/ticker/AAPL/range/1/day")) {
+        return new Response(
+          JSON.stringify({
+            status: "DELAYED",
+            results: Array.from({ length: 35 }, (_, index) => ({
+              c: 180 + index * 0.5,
+              h: 181 + index * 0.5,
+              l: 179 + index * 0.5,
+              v: 1_000_000 + index * 1000,
+              t: Date.UTC(2025, 0, index + 1),
+            })),
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      }
+
+      if (url.includes("/v3/reference/tickers/AAPL")) {
+        return new Response(
+          JSON.stringify({ results: { market_cap: 2_500_000_000_000 } }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      }
+
+      if (url.includes("/v3/reference/financials")) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                financials: {
+                  income_statement: {
+                    net_income_loss: { value: 100_000_000_000 },
+                    revenues: { value: 500_000_000_000 },
+                  },
+                  balance_sheet: {
+                    equity: { value: 700_000_000_000 },
+                    long_term_debt: { value: 200_000_000_000 },
+                  },
+                  cash_flow_statement: {
+                    net_cash_flow_from_operating_activities: { value: 120_000_000_000 },
+                  },
+                },
+              },
+              {
+                financials: {
+                  income_statement: {
+                    revenues: { value: 450_000_000_000 },
+                  },
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      }
+
+      return new Response(JSON.stringify({ results: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    }) as typeof fetch
+
+    const response = await POST(
+      new Request("http://localhost/api/stock-analysis?locale=en", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-market-provider": "massive",
+          "x-massive-api-key": "test-key",
+        },
+        body: JSON.stringify({ symbol: "AAPL" }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const payload = (await response.json()) as {
+      success: boolean
+      data?: { dataSource?: string; uncertaintyMessages?: string[] }
+    }
+
+    expect(payload.success).toBe(true)
+    expect(payload.data?.dataSource).toBe("massive-delayed")
+    expect(payload.data?.uncertaintyMessages?.[0]).toContain("Market data is delayed")
   })
 
   it("supports health and sample actions on GET", async () => {
