@@ -136,6 +136,53 @@ describe("/api/market-data/test-connection", () => {
     expect(payload.data?.currentPrice).toBe(198.21)
   })
 
+  it("returns missing key error for TwelveData without key", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/market-data/test-connection", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: "twelvedata" }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    const payload = (await response.json()) as {
+      success: boolean
+      reason?: string
+      error?: string
+    }
+
+    expect(payload.success).toBe(false)
+    expect(payload.reason).toBe("missing-key")
+    expect(payload.error).toContain("Cle TwelveData")
+  })
+
+  it("returns disabled error for TwelveData when live mode is off", async () => {
+    process.env.TWELVEDATA_LIVE_DATA = "false"
+
+    const response = await POST(
+      new Request("http://localhost/api/market-data/test-connection", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-twelvedata-api-key": "td_test_key",
+        },
+        body: JSON.stringify({ provider: "twelvedata" }),
+      })
+    )
+
+    expect(response.status).toBe(503)
+    const payload = (await response.json()) as {
+      success: boolean
+      reason?: string
+      error?: string
+    }
+
+    expect(payload.success).toBe(false)
+    expect(payload.reason).toBe("disabled")
+    expect(payload.error).toContain("desactivee")
+  })
+
   it("returns success for TwelveData with valid response", async () => {
     global.fetch = vi.fn(async () =>
       new Response(
