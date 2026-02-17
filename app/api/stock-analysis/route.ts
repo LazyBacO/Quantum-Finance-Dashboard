@@ -132,6 +132,27 @@ const buildProactiveSignals = (
   return signals
 }
 
+const buildUncertaintyMessages = (
+  locale: "fr" | "en",
+  dataSource: "twelvedata-live" | "massive-live" | "massive-delayed" | "synthetic"
+) => {
+  if (dataSource !== "synthetic") {
+    return [] as string[]
+  }
+
+  if (locale === "en") {
+    return [
+      "Market data provider unavailable: analysis currently relies on synthetic estimates.",
+      "Treat target/stop levels as lower-confidence guidance until live quotes are restored.",
+    ]
+  }
+
+  return [
+    "Fournisseur de donnees indisponible : l'analyse utilise des estimations synthetiques.",
+    "Considerez les niveaux cible/stop comme moins fiables tant que les cotations en direct ne sont pas retablies.",
+  ]
+}
+
 export const POST = async (request: Request) => {
   let payload: unknown
   try {
@@ -192,6 +213,7 @@ export const POST = async (request: Request) => {
   const summary = generateAnalysisSummary(report, locale)
   const actionableInsights = buildActionableInsights(report, locale)
   const proactiveSignals = buildProactiveSignals(symbol, recommendation, technical.rsi14)
+  const uncertaintyMessages = buildUncertaintyMessages(locale, dataSource)
 
   const entry =
     parsed.data.action && parsed.data.shares
@@ -208,6 +230,7 @@ export const POST = async (request: Request) => {
       recommendation,
       summary,
       dataSource,
+      uncertaintyMessages,
       proactiveSignals,
       actionableInsights,
       entryId: entry?.id,

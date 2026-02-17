@@ -82,6 +82,8 @@ describe("/api/stock-analysis", () => {
       data?: {
         recommendation?: { signal?: string }
         report?: { symbol?: string; technical?: { rsi14?: number } }
+        dataSource?: string
+        uncertaintyMessages?: string[]
         proactiveSignals?: unknown[]
         entryId?: string
       }
@@ -90,6 +92,9 @@ describe("/api/stock-analysis", () => {
     expect(payload.success).toBe(true)
     expect(payload.data?.report?.symbol).toBe("AAPL")
     expect(typeof payload.data?.report?.technical?.rsi14).toBe("number")
+    expect(payload.data?.dataSource).toBe("synthetic")
+    expect(payload.data?.uncertaintyMessages?.length).toBeGreaterThan(0)
+    expect(payload.data?.uncertaintyMessages?.[0]).toContain("estimations synthetiques")
     expect(payload.data?.entryId).toBeTruthy()
     expect(Array.isArray(payload.data?.proactiveSignals)).toBe(true)
   })
