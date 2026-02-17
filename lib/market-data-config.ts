@@ -16,9 +16,15 @@ const normalizeKey = (value: string | undefined | null) => {
 }
 
 export const normalizeMarketProvider = (value: unknown): MarketDataProvider => {
-  if (value === "auto" || value === "massive" || value === "twelvedata") {
-    return value
+  if (typeof value !== "string") {
+    return DEFAULT_MARKET_DATA_PROVIDER
   }
+
+  const normalized = value.trim().toLowerCase()
+  if (normalized === "auto" || normalized === "massive" || normalized === "twelvedata") {
+    return normalized
+  }
+
   return DEFAULT_MARKET_DATA_PROVIDER
 }
 
