@@ -223,7 +223,9 @@ export const POST = async (request: Request) => {
     ],
   }
 
-  const locale = localeSchema.parse(new URL(request.url).searchParams.get("locale") ?? "fr")
+  const localeParam = new URL(request.url).searchParams.get("locale")
+  const parsedLocale = localeSchema.safeParse(localeParam)
+  const locale = parsedLocale.success ? parsedLocale.data : "fr"
   const summary = generateAnalysisSummary(report, locale)
   const actionableInsights = buildActionableInsights(report, locale)
   const proactiveSignals = buildProactiveSignals(symbol, recommendation, technical.rsi14)

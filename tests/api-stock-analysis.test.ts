@@ -212,6 +212,25 @@ describe("/api/stock-analysis", () => {
     expect(payload.data?.uncertaintyMessages?.[0]).toContain("Market data is delayed")
   })
 
+  it("falls back to french locale when locale query param is unsupported", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/stock-analysis?locale=es", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol: "AAPL" }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const payload = (await response.json()) as {
+      success: boolean
+      data?: { uncertaintyMessages?: string[] }
+    }
+
+    expect(payload.success).toBe(true)
+    expect(payload.data?.uncertaintyMessages?.[0]).toContain("estimations synthetiques")
+  })
+
   it("supports health and sample actions on GET", async () => {
     const health = await GET(new Request("http://localhost/api/stock-analysis?action=health"))
     expect(health.status).toBe(200)
