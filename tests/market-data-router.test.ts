@@ -5,6 +5,8 @@ const {
   fetchTwelveDataAnalysisContextMock,
   getCachedMassiveQuoteMock,
   getCachedTwelveDataQuoteMock,
+  isMassiveLiveModeEnabledMock,
+  isTwelveDataLiveModeEnabledMock,
   prefetchMassiveQuotesMock,
   prefetchTwelveDataQuotesMock,
 } = vi.hoisted(() => ({
@@ -12,6 +14,8 @@ const {
   fetchTwelveDataAnalysisContextMock: vi.fn(),
   getCachedMassiveQuoteMock: vi.fn(),
   getCachedTwelveDataQuoteMock: vi.fn(),
+  isMassiveLiveModeEnabledMock: vi.fn(),
+  isTwelveDataLiveModeEnabledMock: vi.fn(),
   prefetchMassiveQuotesMock: vi.fn(),
   prefetchTwelveDataQuotesMock: vi.fn(),
 }))
@@ -19,12 +23,14 @@ const {
 vi.mock("@/lib/massive-market-data", () => ({
   fetchMassiveAnalysisContext: fetchMassiveAnalysisContextMock,
   getCachedMassiveQuote: getCachedMassiveQuoteMock,
+  isMassiveLiveModeEnabled: isMassiveLiveModeEnabledMock,
   prefetchMassiveQuotes: prefetchMassiveQuotesMock,
 }))
 
 vi.mock("@/lib/twelvedata-market-data", () => ({
   fetchTwelveDataAnalysisContext: fetchTwelveDataAnalysisContextMock,
   getCachedTwelveDataQuote: getCachedTwelveDataQuoteMock,
+  isTwelveDataLiveModeEnabled: isTwelveDataLiveModeEnabledMock,
   prefetchTwelveDataQuotes: prefetchTwelveDataQuotesMock,
 }))
 
@@ -64,6 +70,8 @@ describe("market data router", () => {
 
     getCachedMassiveQuoteMock.mockReturnValue(null)
     getCachedTwelveDataQuoteMock.mockReturnValue(null)
+    isMassiveLiveModeEnabledMock.mockReturnValue(true)
+    isTwelveDataLiveModeEnabledMock.mockReturnValue(true)
     fetchMassiveAnalysisContextMock.mockResolvedValue(null)
     fetchTwelveDataAnalysisContextMock.mockResolvedValue(null)
   })
@@ -120,6 +128,19 @@ describe("market data router", () => {
       process.env.MASSIVE_LIVE_DATA = previousMassiveFlag
       process.env.TWELVEDATA_LIVE_DATA = previousTwelveFlag
     }
+  })
+
+  it("does not count disabled providers as circuit-breaker failures", async () => {
+    isTwelveDataLiveModeEnabledMock.mockReturnValue(false)
+    fetchMassiveAnalysisContextMock.mockResolvedValue(null)
+
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+
+    expect(fetchTwelveDataAnalysisContextMock).not.toHaveBeenCalled()
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(3)
   })
 
   it("uses fallback provider when preferred provider fails", async () => {

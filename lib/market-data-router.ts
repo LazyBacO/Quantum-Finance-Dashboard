@@ -1,6 +1,7 @@
 import {
   fetchMassiveAnalysisContext,
   getCachedMassiveQuote,
+  isMassiveLiveModeEnabled,
   prefetchMassiveQuotes,
   type MassiveAnalysisContext,
 } from "@/lib/massive-market-data"
@@ -9,6 +10,7 @@ import { normalizeMarketDataRequestConfig } from "@/lib/market-data-config"
 import {
   fetchTwelveDataAnalysisContext,
   getCachedTwelveDataQuote,
+  isTwelveDataLiveModeEnabled,
   prefetchTwelveDataQuotes,
   type TwelveDataAnalysisContext,
 } from "@/lib/twelvedata-market-data"
@@ -39,6 +41,13 @@ const MAX_SYMBOL_LENGTH = 24
 const SYMBOL_PATTERN = /^[A-Z0-9^][A-Z0-9.^-]{0,23}$/
 
 type ProviderName = "massive" | "twelvedata"
+
+const isProviderEnabled = (provider: ProviderName, config: MarketDataRequestConfig) => {
+  if (provider === "massive") {
+    return isMassiveLiveModeEnabled(config)
+  }
+  return isTwelveDataLiveModeEnabled(config)
+}
 
 interface ProviderCircuitState {
   consecutiveFailures: number
@@ -189,6 +198,10 @@ export async function prefetchPreferredMarketQuotes(
 
   const order = getProviderOrder(normalized.provider ?? "auto")
   for (const provider of order) {
+    if (!isProviderEnabled(provider, normalized)) {
+      continue
+    }
+
     if (isCircuitOpen(provider)) {
       continue
     }
@@ -235,6 +248,10 @@ export async function fetchPreferredMarketAnalysisContext(
 
   const requestPromise = (async () => {
     for (const provider of order) {
+      if (!isProviderEnabled(provider, normalized)) {
+        continue
+      }
+
       if (isCircuitOpen(provider)) {
         continue
       }
