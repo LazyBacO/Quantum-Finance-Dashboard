@@ -163,4 +163,27 @@ describe("market data router", () => {
 
     expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(3)
   })
+
+  it("requires a fresh failure streak after cooldown expires", async () => {
+    vi.useFakeTimers()
+    fetchTwelveDataAnalysisContextMock.mockResolvedValue(null)
+    fetchMassiveAnalysisContextMock.mockResolvedValue(null)
+
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+
+    expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(30_001)
+
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "twelvedata" })
+
+    expect(fetchTwelveDataAnalysisContextMock).toHaveBeenCalledTimes(6)
+    vi.useRealTimers()
+  })
 })

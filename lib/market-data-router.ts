@@ -114,6 +114,16 @@ const writeCachedContext = (
 
 const isCircuitOpen = (provider: ProviderName) => providerCircuitState[provider].openedUntilMs > Date.now()
 
+const getFailureCountForProviderAttempt = (provider: ProviderName) => {
+  const state = providerCircuitState[provider]
+  if (state.openedUntilMs > 0 && state.openedUntilMs <= Date.now()) {
+    providerCircuitState[provider] = { consecutiveFailures: 0, openedUntilMs: 0 }
+    return 0
+  }
+
+  return state.consecutiveFailures
+}
+
 const markProviderSuccess = (provider: ProviderName) => {
   providerCircuitState[provider] = {
     consecutiveFailures: 0,
@@ -122,7 +132,7 @@ const markProviderSuccess = (provider: ProviderName) => {
 }
 
 const markProviderFailure = (provider: ProviderName) => {
-  const nextFailures = providerCircuitState[provider].consecutiveFailures + 1
+  const nextFailures = getFailureCountForProviderAttempt(provider) + 1
   providerCircuitState[provider].consecutiveFailures = nextFailures
 
   if (nextFailures >= PROVIDER_FAILURE_THRESHOLD) {
