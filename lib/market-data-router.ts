@@ -56,15 +56,14 @@ interface ProviderCircuitState {
   openedUntilMs: number
 }
 
+type ProviderCircuitKey = `${ProviderName}:${string}`
+
 interface CachedContextEntry {
   expiresAtMs: number
   value: { source: MarketDataSource; context: MarketAnalysisContext }
 }
 
-const providerCircuitState: Record<ProviderName, ProviderCircuitState> = {
-  massive: { consecutiveFailures: 0, openedUntilMs: 0 },
-  twelvedata: { consecutiveFailures: 0, openedUntilMs: 0 },
-}
+const providerCircuitStateByScope = new Map<ProviderCircuitKey, ProviderCircuitState>()
 
 const analysisContextCache = new Map<string, CachedContextEntry>()
 const inflightContextRequests = new Map<string, Promise<{ source: MarketDataSource; context: MarketAnalysisContext } | null>>()
@@ -150,35 +149,50 @@ const writeCachedContext = (
   })
 }
 
-const isCircuitOpen = (provider: ProviderName) => providerCircuitState[provider].openedUntilMs > Date.now()
+const getProviderCircuitKey = (provider: ProviderName, scopeKey: string): ProviderCircuitKey =>
+  `${provider}:${scopeKey}`
 
-const getFailureCountForProviderAttempt = (provider: ProviderName) => {
-  const state = providerCircuitState[provider]
+const getProviderCircuitState = (provider: ProviderName, scopeKey: string): ProviderCircuitState => {
+  const key = getProviderCircuitKey(provider, scopeKey)
+  const existing = providerCircuitStateByScope.get(key)
+  if (existing) {
+    return existing
+  }
+
+  const initialState: ProviderCircuitState = { consecutiveFailures: 0, openedUntilMs: 0 }
+  providerCircuitStateByScope.set(key, initialState)
+  return initialState
+}
+
+const isCircuitOpen = (provider: ProviderName, scopeKey: string) =>
+  getProviderCircuitState(provider, scopeKey).openedUntilMs > Date.now()
+
+const getFailureCountForProviderAttempt = (provider: ProviderName, scopeKey: string) => {
+  const key = getProviderCircuitKey(provider, scopeKey)
+  const state = getProviderCircuitState(provider, scopeKey)
   if (state.openedUntilMs > 0 && state.openedUntilMs <= Date.now()) {
-    providerCircuitState[provider] = { consecutiveFailures: 0, openedUntilMs: 0 }
+    providerCircuitStateByScope.set(key, { consecutiveFailures: 0, openedUntilMs: 0 })
     return 0
   }
 
   return state.consecutiveFailures
 }
 
-const markProviderSuccess = (provider: ProviderName) => {
-  providerCircuitState[provider] = {
+const markProviderSuccess = (provider: ProviderName, scopeKey: string) => {
+  providerCircuitStateByScope.set(getProviderCircuitKey(provider, scopeKey), {
     consecutiveFailures: 0,
     openedUntilMs: 0,
-  }
+  })
 }
 
-const markProviderFailure = (provider: ProviderName) => {
-  const nextFailures = getFailureCountForProviderAttempt(provider) + 1
-  providerCircuitState[provider].consecutiveFailures = nextFailures
-
-  if (nextFailures >= PROVIDER_FAILURE_THRESHOLD) {
-    providerCircuitState[provider] = {
-      consecutiveFailures: nextFailures,
-      openedUntilMs: Date.now() + PROVIDER_COOLDOWN_MS,
-    }
-  }
+const markProviderFailure = (provider: ProviderName, scopeKey: string) => {
+  const nextFailures = getFailureCountForProviderAttempt(provider, scopeKey) + 1
+  const key = getProviderCircuitKey(provider, scopeKey)
+  providerCircuitStateByScope.set(key, {
+    consecutiveFailures: nextFailures,
+    openedUntilMs:
+      nextFailures >= PROVIDER_FAILURE_THRESHOLD ? Date.now() + PROVIDER_COOLDOWN_MS : 0,
+  })
 }
 
 export const getCachedPreferredMarketQuote = (
@@ -215,12 +229,13 @@ export async function prefetchPreferredMarketQuotes(
   if (symbols.length === 0) return
 
   const order = getProviderOrder(normalized.provider ?? "auto")
+  const requestScopeKey = getRequestScopeKey(normalized)
   for (const provider of order) {
     if (!isProviderEnabled(provider, normalized)) {
       continue
     }
 
-    if (isCircuitOpen(provider)) {
+    if (isCircuitOpen(provider, requestScopeKey)) {
       continue
     }
 
@@ -229,10 +244,10 @@ export async function prefetchPreferredMarketQuotes(
 
     await prefetchPromise
       .then(() => {
-        markProviderSuccess(provider)
+        markProviderSuccess(provider, requestScopeKey)
       })
       .catch(() => {
-        markProviderFailure(provider)
+        markProviderFailure(provider, requestScopeKey)
       })
 
     if (hasAnyQuote(symbols, provider)) {
@@ -272,14 +287,14 @@ export async function fetchPreferredMarketAnalysisContext(
         continue
       }
 
-      if (isCircuitOpen(provider)) {
+      if (isCircuitOpen(provider, requestScopeKey)) {
         continue
       }
 
       if (provider === "twelvedata") {
         const context = await fetchTwelveDataAnalysisContext(normalizedSymbol, normalized).catch(() => null)
         if (context) {
-          markProviderSuccess(provider)
+          markProviderSuccess(provider, requestScopeKey)
           const value = {
             source: "twelvedata-live" as const,
             context: toMarketAnalysisContext(context),
@@ -287,13 +302,13 @@ export async function fetchPreferredMarketAnalysisContext(
           writeCachedContext(normalizedSymbol, preferredProvider, requestScopeKey, value)
           return value
         }
-        markProviderFailure(provider)
+        markProviderFailure(provider, requestScopeKey)
         continue
       }
 
       const context = await fetchMassiveAnalysisContext(normalizedSymbol, normalized).catch(() => null)
       if (context) {
-        markProviderSuccess(provider)
+        markProviderSuccess(provider, requestScopeKey)
         const value = {
           source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
           context: toMarketAnalysisContext(context),
@@ -302,7 +317,7 @@ export async function fetchPreferredMarketAnalysisContext(
         return value
       }
 
-      markProviderFailure(provider)
+      markProviderFailure(provider, requestScopeKey)
     }
 
     return null
@@ -319,6 +334,5 @@ export async function fetchPreferredMarketAnalysisContext(
 export const __resetMarketDataRouterStateForTests = () => {
   analysisContextCache.clear()
   inflightContextRequests.clear()
-  providerCircuitState.massive = { consecutiveFailures: 0, openedUntilMs: 0 }
-  providerCircuitState.twelvedata = { consecutiveFailures: 0, openedUntilMs: 0 }
+  providerCircuitStateByScope.clear()
 }

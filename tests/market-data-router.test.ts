@@ -238,6 +238,24 @@ describe("market data router", () => {
     expect(keyedResult?.context.symbol).toBe("AAPL")
   })
 
+  it("isolates circuit breaker state per market-data auth scope", async () => {
+    fetchMassiveAnalysisContextMock.mockResolvedValue(null)
+
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+    await fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(3)
+
+    await fetchPreferredMarketAnalysisContext("AAPL", {
+      provider: "massive",
+      massiveApiKey: "valid-key",
+    })
+
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(4)
+  })
+
   it("normalizes symbol casing/spacing for cache and provider calls", async () => {
     fetchMassiveAnalysisContextMock.mockResolvedValue(liveContext)
 
