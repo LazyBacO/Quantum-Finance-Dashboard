@@ -17,7 +17,7 @@ import { parseMarketDataRequestHeaders, type MarketDataRequestConfig } from "@/l
 import { fetchPreferredMarketAnalysisContext } from "@/lib/market-data-router"
 
 const analyzeStockRequestSchema = z.object({
-  symbol: z.string().trim().min(1).max(10).regex(/^[A-Z0-9.-]+$/i, "Invalid symbol format."),
+  symbol: z.string().trim().min(1).max(10).regex(/^[A-Z0-9^][A-Z0-9.^-]*$/i, "Invalid symbol format."),
   currentPrice: z.number().positive().optional(),
   high52week: z.number().positive().optional(),
   low52week: z.number().positive().optional(),
@@ -132,6 +132,41 @@ const buildProactiveSignals = (
   return signals
 }
 
+const buildUncertaintyMessages = (
+  locale: "fr" | "en",
+  dataSource: "twelvedata-live" | "massive-live" | "massive-delayed" | "synthetic"
+) => {
+  if (dataSource === "massive-delayed") {
+    if (locale === "en") {
+      return [
+        "Market data is delayed: recommendations may lag real-time price moves.",
+        "Validate entry/exit levels against a live quote before placing orders.",
+      ]
+    }
+
+    return [
+      "Les donnees de marche sont differees : les recommandations peuvent etre en retard sur le temps reel.",
+      "Validez les niveaux d'entree/sortie avec une cotation en direct avant execution.",
+    ]
+  }
+
+  if (dataSource !== "synthetic") {
+    return [] as string[]
+  }
+
+  if (locale === "en") {
+    return [
+      "Market data provider unavailable: analysis currently relies on synthetic estimates.",
+      "Treat target/stop levels as lower-confidence guidance until live quotes are restored.",
+    ]
+  }
+
+  return [
+    "Fournisseur de donnees indisponible : l'analyse utilise des estimations synthetiques.",
+    "Considerez les niveaux cible/stop comme moins fiables tant que les cotations en direct ne sont pas retablies.",
+  ]
+}
+
 export const POST = async (request: Request) => {
   let payload: unknown
   try {
@@ -192,6 +227,7 @@ export const POST = async (request: Request) => {
   const summary = generateAnalysisSummary(report, locale)
   const actionableInsights = buildActionableInsights(report, locale)
   const proactiveSignals = buildProactiveSignals(symbol, recommendation, technical.rsi14)
+  const uncertaintyMessages = buildUncertaintyMessages(locale, dataSource)
 
   const entry =
     parsed.data.action && parsed.data.shares
@@ -208,6 +244,7 @@ export const POST = async (request: Request) => {
       recommendation,
       summary,
       dataSource,
+      uncertaintyMessages,
       proactiveSignals,
       actionableInsights,
       entryId: entry?.id,
