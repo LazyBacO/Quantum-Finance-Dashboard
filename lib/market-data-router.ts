@@ -83,6 +83,8 @@ const toMarketAnalysisContext = (
   fundamentals: context.fundamentals,
 })
 
+const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase()
+
 const getContextCacheKey = (symbol: string, provider: MarketDataProvider) => `${provider}:${symbol}`
 
 const readCachedContext = (symbol: string, provider: MarketDataProvider) => {
@@ -135,10 +137,17 @@ export const getCachedPreferredMarketQuote = (
   config?: MarketDataRequestConfig
 ) => {
   const normalized = normalizeMarketDataRequestConfig(config)
+  const normalizedSymbol = normalizeSymbol(symbol)
+  if (!normalizedSymbol) {
+    return null
+  }
+
   const order = getProviderOrder(normalized.provider ?? "auto")
   for (const provider of order) {
     const quote =
-      provider === "twelvedata" ? getCachedTwelveDataQuote(symbol) : getCachedMassiveQuote(symbol)
+      provider === "twelvedata"
+        ? getCachedTwelveDataQuote(normalizedSymbol)
+        : getCachedMassiveQuote(normalizedSymbol)
     if (quote !== null) return quote
   }
   return null
@@ -180,8 +189,13 @@ export async function fetchPreferredMarketAnalysisContext(
   config?: MarketDataRequestConfig
 ): Promise<{ source: MarketDataSource; context: MarketAnalysisContext } | null> {
   const normalized = normalizeMarketDataRequestConfig(config)
+  const normalizedSymbol = normalizeSymbol(symbol)
+  if (!normalizedSymbol) {
+    return null
+  }
+
   const order = getProviderOrder(normalized.provider ?? "auto")
-  const cached = readCachedContext(symbol, normalized.provider ?? "auto")
+  const cached = readCachedContext(normalizedSymbol, normalized.provider ?? "auto")
   if (cached) {
     return cached
   }
@@ -192,28 +206,28 @@ export async function fetchPreferredMarketAnalysisContext(
     }
 
     if (provider === "twelvedata") {
-      const context = await fetchTwelveDataAnalysisContext(symbol, normalized).catch(() => null)
+      const context = await fetchTwelveDataAnalysisContext(normalizedSymbol, normalized).catch(() => null)
       if (context) {
         markProviderSuccess(provider)
         const value = {
           source: "twelvedata-live" as const,
           context: toMarketAnalysisContext(context),
         }
-        writeCachedContext(symbol, normalized.provider ?? "auto", value)
+        writeCachedContext(normalizedSymbol, normalized.provider ?? "auto", value)
         return value
       }
       markProviderFailure(provider)
       continue
     }
 
-    const context = await fetchMassiveAnalysisContext(symbol, normalized).catch(() => null)
+    const context = await fetchMassiveAnalysisContext(normalizedSymbol, normalized).catch(() => null)
     if (context) {
       markProviderSuccess(provider)
       const value = {
         source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
         context: toMarketAnalysisContext(context),
       }
-      writeCachedContext(symbol, normalized.provider ?? "auto", value)
+      writeCachedContext(normalizedSymbol, normalized.provider ?? "auto", value)
       return value
     }
 
