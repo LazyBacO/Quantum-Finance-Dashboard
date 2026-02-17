@@ -192,6 +192,10 @@ export async function prefetchPreferredMarketQuotes(
   symbolsInput: string[],
   config?: MarketDataRequestConfig
 ) {
+  if (!Array.isArray(symbolsInput) || symbolsInput.length === 0) {
+    return
+  }
+
   const normalized = normalizeMarketDataRequestConfig(config)
   const symbols = Array.from(new Set(symbolsInput.map((symbol) => normalizeSymbol(symbol)).filter(Boolean)))
   if (symbols.length === 0) return

@@ -38,6 +38,7 @@ import {
   __resetMarketDataRouterStateForTests,
   fetchPreferredMarketAnalysisContext,
   getCachedPreferredMarketQuote,
+  prefetchPreferredMarketQuotes,
 } from "@/lib/market-data-router"
 
 const liveContext = {
@@ -102,6 +103,19 @@ describe("market data router", () => {
 
     expect(fetchMassiveAnalysisContextMock).not.toHaveBeenCalled()
     expect(fetchTwelveDataAnalysisContextMock).not.toHaveBeenCalled()
+  })
+
+  it("handles invalid prefetch input safely", async () => {
+    await expect(
+      prefetchPreferredMarketQuotes(undefined as unknown as string[], { provider: "massive" })
+    ).resolves.toBeUndefined()
+
+    await prefetchPreferredMarketQuotes(["   ", "bad<script>", "A".repeat(25)], {
+      provider: "massive",
+    })
+
+    expect(prefetchMassiveQuotesMock).not.toHaveBeenCalled()
+    expect(prefetchTwelveDataQuotesMock).not.toHaveBeenCalled()
   })
 
   it("returns null analysis context when no provider key is available", async () => {
