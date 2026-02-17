@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import {
+  __setCachedTwelveDataQuoteForTests,
   fetchTwelveDataAnalysisContext,
   getCachedTwelveDataQuote,
   isTwelveDataLiveModeEnabled,
@@ -24,5 +25,14 @@ describe("twelvedata market data", () => {
 
   it("returns null for unknown cached quote", () => {
     expect(getCachedTwelveDataQuote("UNKNOWN-TICKER")).toBeNull()
+  })
+
+  it("evicts expired cached quotes", () => {
+    __setCachedTwelveDataQuoteForTests("AAPL", {
+      priceCents: 12345,
+      expiresAt: Date.now() - 1,
+    })
+
+    expect(getCachedTwelveDataQuote("AAPL")).toBeNull()
   })
 })

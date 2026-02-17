@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import {
+  __setCachedMassiveQuoteForTests,
   fetchMassiveAnalysisContext,
   getCachedMassiveQuote,
   isMassiveLiveModeEnabled,
@@ -27,5 +28,14 @@ describe("massive market data", () => {
 
   it("returns null cache when quote is unknown", () => {
     expect(getCachedMassiveQuote("UNKNOWN-TICKER")).toBeNull()
+  })
+
+  it("evicts expired cached quotes", () => {
+    __setCachedMassiveQuoteForTests("AAPL", {
+      priceCents: 12345,
+      expiresAt: Date.now() - 1,
+    })
+
+    expect(getCachedMassiveQuote("AAPL")).toBeNull()
   })
 })
