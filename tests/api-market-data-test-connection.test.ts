@@ -65,9 +65,40 @@ describe("/api/market-data/test-connection", () => {
     )
 
     expect(response.status).toBe(400)
-    const payload = (await response.json()) as { success: boolean; error?: string }
+    const payload = (await response.json()) as {
+      success: boolean
+      reason?: string
+      error?: string
+    }
     expect(payload.success).toBe(false)
+    expect(payload.reason).toBe("missing-key")
     expect(payload.error).toContain("Cle Massive")
+  })
+
+  it("returns disabled error for Massive when live mode is off", async () => {
+    process.env.MASSIVE_LIVE_DATA = "false"
+
+    const response = await POST(
+      new Request("http://localhost/api/market-data/test-connection", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-massive-api-key": "massive_test_key",
+        },
+        body: JSON.stringify({ provider: "massive" }),
+      })
+    )
+
+    expect(response.status).toBe(503)
+    const payload = (await response.json()) as {
+      success: boolean
+      reason?: string
+      error?: string
+    }
+
+    expect(payload.success).toBe(false)
+    expect(payload.reason).toBe("disabled")
+    expect(payload.error).toContain("desactivee")
   })
 
   it("returns success for Massive with valid response", async () => {
