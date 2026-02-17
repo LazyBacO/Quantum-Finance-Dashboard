@@ -137,7 +137,28 @@ export const getCachedTwelveDataQuote = (symbolInput: string) => {
   const symbol = toUpperSymbol(symbolInput)
   const cached = quoteCache.get(symbol)
   if (!cached) return null
+  if (cached.expiresAt <= Date.now()) {
+    quoteCache.delete(symbol)
+    return null
+  }
   return cached.priceCents
+}
+
+export const __setCachedTwelveDataQuoteForTests = (
+  symbolInput: string,
+  value: { priceCents: number; asOf?: string; expiresAt: number } | null
+) => {
+  const symbol = toUpperSymbol(symbolInput)
+  if (!value) {
+    quoteCache.delete(symbol)
+    return
+  }
+
+  quoteCache.set(symbol, {
+    priceCents: value.priceCents,
+    asOf: value.asOf ?? new Date().toISOString(),
+    expiresAt: value.expiresAt,
+  })
 }
 
 export async function testTwelveDataConnection(
