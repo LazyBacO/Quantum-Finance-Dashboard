@@ -45,6 +45,18 @@ const liveContext = {
   avgVolume: 1_000_000,
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+
+  return { promise, resolve, reject }
+}
+
 describe("market data router", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -109,7 +121,7 @@ describe("market data router", () => {
   })
 
   it("deduplicates concurrent context requests for the same symbol/provider", async () => {
-    const deferred = Promise.withResolvers<typeof liveContext | null>()
+    const deferred = createDeferred<typeof liveContext | null>()
     fetchMassiveAnalysisContextMock.mockImplementation(() => deferred.promise)
 
     const firstPromise = fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
