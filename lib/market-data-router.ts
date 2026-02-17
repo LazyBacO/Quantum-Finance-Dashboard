@@ -117,15 +117,16 @@ const hashConfigValue = (value: string | undefined) => {
   return createHash("sha256").update(value).digest("hex").slice(0, 12)
 }
 
-const getContextCacheKey = (symbol: string, provider: MarketDataProvider) => `${provider}:${symbol}`
+const getContextCacheKey = (symbol: string, provider: MarketDataProvider, scopeKey: string) =>
+  `${provider}:${symbol}:${scopeKey}`
 
 const getRequestScopeKey = (config: MarketDataRequestConfig) => {
   const provider = config.provider ?? "auto"
   return [provider, hashConfigValue(config.massiveApiKey), hashConfigValue(config.twelveDataApiKey)].join(":")
 }
 
-const readCachedContext = (symbol: string, provider: MarketDataProvider) => {
-  const cacheKey = getContextCacheKey(symbol, provider)
+const readCachedContext = (symbol: string, provider: MarketDataProvider, scopeKey: string) => {
+  const cacheKey = getContextCacheKey(symbol, provider, scopeKey)
   const entry = analysisContextCache.get(cacheKey)
   if (!entry) return null
 
@@ -140,9 +141,10 @@ const readCachedContext = (symbol: string, provider: MarketDataProvider) => {
 const writeCachedContext = (
   symbol: string,
   provider: MarketDataProvider,
+  scopeKey: string,
   value: { source: MarketDataSource; context: MarketAnalysisContext }
 ) => {
-  analysisContextCache.set(getContextCacheKey(symbol, provider), {
+  analysisContextCache.set(getContextCacheKey(symbol, provider, scopeKey), {
     expiresAtMs: Date.now() + CONTEXT_CACHE_TTL_MS,
     value,
   })
@@ -250,10 +252,11 @@ export async function fetchPreferredMarketAnalysisContext(
   }
 
   const preferredProvider = normalized.provider ?? "auto"
-  const cacheKey = getContextCacheKey(normalizedSymbol, preferredProvider)
-  const inflightKey = `${cacheKey}:${getRequestScopeKey(normalized)}`
+  const requestScopeKey = getRequestScopeKey(normalized)
+  const cacheKey = getContextCacheKey(normalizedSymbol, preferredProvider, requestScopeKey)
+  const inflightKey = cacheKey
   const order = getProviderOrder(preferredProvider)
-  const cached = readCachedContext(normalizedSymbol, preferredProvider)
+  const cached = readCachedContext(normalizedSymbol, preferredProvider, requestScopeKey)
   if (cached) {
     return cached
   }
@@ -281,7 +284,7 @@ export async function fetchPreferredMarketAnalysisContext(
             source: "twelvedata-live" as const,
             context: toMarketAnalysisContext(context),
           }
-          writeCachedContext(normalizedSymbol, preferredProvider, value)
+          writeCachedContext(normalizedSymbol, preferredProvider, requestScopeKey, value)
           return value
         }
         markProviderFailure(provider)
@@ -295,7 +298,7 @@ export async function fetchPreferredMarketAnalysisContext(
           source: context.status === "delayed" ? ("massive-delayed" as const) : ("massive-live" as const),
           context: toMarketAnalysisContext(context),
         }
-        writeCachedContext(normalizedSymbol, preferredProvider, value)
+        writeCachedContext(normalizedSymbol, preferredProvider, requestScopeKey, value)
         return value
       }
 
