@@ -196,6 +196,32 @@ describe("market data router", () => {
     expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(1)
   })
 
+  it("does not deduplicate concurrent requests when market-data auth context differs", async () => {
+    const noKeyDeferred = createDeferred<typeof liveContext | null>()
+
+    fetchMassiveAnalysisContextMock.mockImplementation((_: string, config?: { massiveApiKey?: string }) => {
+      if (!config?.massiveApiKey) {
+        return noKeyDeferred.promise
+      }
+      return Promise.resolve(liveContext)
+    })
+
+    const noKeyPromise = fetchPreferredMarketAnalysisContext("AAPL", { provider: "massive" })
+    const keyedPromise = fetchPreferredMarketAnalysisContext("AAPL", {
+      provider: "massive",
+      massiveApiKey: "valid-key",
+    })
+
+    expect(fetchMassiveAnalysisContextMock).toHaveBeenCalledTimes(2)
+
+    noKeyDeferred.resolve(null)
+
+    const [noKeyResult, keyedResult] = await Promise.all([noKeyPromise, keyedPromise])
+
+    expect(noKeyResult).toBeNull()
+    expect(keyedResult?.context.symbol).toBe("AAPL")
+  })
+
   it("normalizes symbol casing/spacing for cache and provider calls", async () => {
     fetchMassiveAnalysisContextMock.mockResolvedValue(liveContext)
 

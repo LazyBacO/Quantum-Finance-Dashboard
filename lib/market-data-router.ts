@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 import {
   fetchMassiveAnalysisContext,
   getCachedMassiveQuote,
@@ -110,7 +112,17 @@ const normalizeSymbol = (symbol: unknown) => {
   return normalized
 }
 
+const hashConfigValue = (value: string | undefined) => {
+  if (!value) return "none"
+  return createHash("sha256").update(value).digest("hex").slice(0, 12)
+}
+
 const getContextCacheKey = (symbol: string, provider: MarketDataProvider) => `${provider}:${symbol}`
+
+const getRequestScopeKey = (config: MarketDataRequestConfig) => {
+  const provider = config.provider ?? "auto"
+  return [provider, hashConfigValue(config.massiveApiKey), hashConfigValue(config.twelveDataApiKey)].join(":")
+}
 
 const readCachedContext = (symbol: string, provider: MarketDataProvider) => {
   const cacheKey = getContextCacheKey(symbol, provider)
@@ -239,13 +251,14 @@ export async function fetchPreferredMarketAnalysisContext(
 
   const preferredProvider = normalized.provider ?? "auto"
   const cacheKey = getContextCacheKey(normalizedSymbol, preferredProvider)
+  const inflightKey = `${cacheKey}:${getRequestScopeKey(normalized)}`
   const order = getProviderOrder(preferredProvider)
   const cached = readCachedContext(normalizedSymbol, preferredProvider)
   if (cached) {
     return cached
   }
 
-  const inflight = inflightContextRequests.get(cacheKey)
+  const inflight = inflightContextRequests.get(inflightKey)
   if (inflight) {
     return inflight
   }
@@ -292,11 +305,11 @@ export async function fetchPreferredMarketAnalysisContext(
     return null
   })()
 
-  inflightContextRequests.set(cacheKey, requestPromise)
+  inflightContextRequests.set(inflightKey, requestPromise)
   try {
     return await requestPromise
   } finally {
-    inflightContextRequests.delete(cacheKey)
+    inflightContextRequests.delete(inflightKey)
   }
 }
 
