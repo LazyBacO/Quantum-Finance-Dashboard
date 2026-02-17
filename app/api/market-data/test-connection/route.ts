@@ -13,7 +13,13 @@ const requestSchema = z.object({
   symbol: z.string().min(1).max(10).optional(),
 })
 
-const normalizeSymbol = (value: string | undefined) => (value?.trim().toUpperCase() || "AAPL").slice(0, 10)
+const MAX_SYMBOL_LENGTH = 10
+const SYMBOL_PATTERN = /^[A-Z0-9^][A-Z0-9.^-]{0,9}$/
+
+const normalizeSymbol = (value: string | undefined) => {
+  const normalized = (value?.trim().toUpperCase() || "AAPL").slice(0, MAX_SYMBOL_LENGTH)
+  return SYMBOL_PATTERN.test(normalized) ? normalized : null
+}
 
 const statusFromReason = (reason: string | undefined) => {
   if (reason === "missing-key") return 400
@@ -50,6 +56,13 @@ export const POST = async (request: Request) => {
   }
 
   const symbol = normalizeSymbol(parsed.data.symbol)
+  if (!symbol) {
+    return NextResponse.json(
+      { success: false, error: "Invalid symbol format. Use letters, numbers, ., -, or ^." },
+      { status: 400 }
+    )
+  }
+
   const requestConfig = parseMarketDataRequestHeaders(request)
 
   if (parsed.data.provider === "massive") {
