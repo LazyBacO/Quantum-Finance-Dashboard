@@ -19,7 +19,7 @@ OpenNova Finance est une application de pilotage financier augmentee par IA (GPT
 
 ## Apercu visuel
 
-![Screenshot OpenNova Finance Dashboard](public/opennova-dashboard-screenshot.png)
+![Screenshot OpenNova Finance Dashboard](public/opennova-dashboard-screenshot-2026-02-17.jpg)
 
 _Capture reelle du dashboard OpenNova Finance (vue desktop)._
 
