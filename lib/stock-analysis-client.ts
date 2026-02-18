@@ -91,7 +91,7 @@ export async function analyzeStock(request: StockAnalysisRequest): Promise<Stock
       return { success: false, error: "Symbol is required." }
     }
 
-    if (request.shares !== undefined && request.shares <= 0) {
+    if (request.shares !== undefined && (!Number.isFinite(request.shares) || request.shares <= 0)) {
       return { success: false, error: "Shares must be greater than 0." }
     }
 
@@ -120,7 +120,7 @@ export async function analyzeStock(request: StockAnalysisRequest): Promise<Stock
       priceHistory: request.priceHistory,
       action: request.action,
       shares: request.shares,
-      notes: normalizedNotes,
+      notes: normalizedNotes || undefined,
     }
 
     return await fetchJson<StockAnalysisResponse>("/api/stock-analysis", {
