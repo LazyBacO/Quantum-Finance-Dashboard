@@ -1,10 +1,6 @@
 import type { StockAction } from "@/lib/portfolio-data"
 import { buildMarketDataHeaders } from "@/lib/market-data-client"
-import {
-  generateSyntheticMarketSnapshot,
-  type StockAnalysisReport,
-  type StockAIRecommendation,
-} from "@/lib/stock-analysis-engine"
+import { type StockAnalysisReport, type StockAIRecommendation } from "@/lib/stock-analysis-engine"
 import {
   buildStockAnalysisContextSnapshot,
   getAnalysesBySymbol,
@@ -95,24 +91,23 @@ export async function analyzeStock(request: StockAnalysisRequest): Promise<Stock
       return { success: false, error: "Symbol is required." }
     }
 
-    const synthetic = generateSyntheticMarketSnapshot(symbol, request.currentPrice)
     const mergedPayload = {
       symbol,
-      currentPrice: request.currentPrice ?? synthetic.currentPrice,
-      high52week: request.high52week ?? synthetic.high52week,
-      low52week: request.low52week ?? synthetic.low52week,
-      avgVolume: request.avgVolume ?? synthetic.avgVolume,
-      marketCap: request.marketCap ?? synthetic.marketCap,
-      pe: request.pe ?? synthetic.pe,
-      dividend: request.dividend ?? synthetic.dividend,
-      beta: request.beta ?? synthetic.beta,
-      pb: request.pb ?? synthetic.pb,
-      ps: request.ps ?? synthetic.ps,
-      debt: request.debt ?? synthetic.debt,
-      roe: request.roe ?? synthetic.roe,
-      roic: request.roic ?? synthetic.roic,
-      fcf: request.fcf ?? synthetic.fcf,
-      growthRate: request.growthRate ?? synthetic.growthRate,
+      currentPrice: request.currentPrice,
+      high52week: request.high52week,
+      low52week: request.low52week,
+      avgVolume: request.avgVolume,
+      marketCap: request.marketCap,
+      pe: request.pe,
+      dividend: request.dividend,
+      beta: request.beta,
+      pb: request.pb,
+      ps: request.ps,
+      debt: request.debt,
+      roe: request.roe,
+      roic: request.roic,
+      fcf: request.fcf,
+      growthRate: request.growthRate,
       priceHistory: request.priceHistory,
       action: request.action,
       shares: request.shares,
