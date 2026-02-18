@@ -94,4 +94,26 @@ describe("stock-analysis-client", () => {
     expect(response.success).toBe(true)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
+
+  it("rejects non-positive shares before network call", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+
+    const response = await analyzeStock({ symbol: "AAPL", action: "buy", shares: 0 })
+
+    expect(response.success).toBe(false)
+    expect(response.error).toBe("Shares must be greater than 0.")
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("rejects oversized notes before network call", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+
+    const response = await analyzeStock({ symbol: "AAPL", notes: "x".repeat(501) })
+
+    expect(response.success).toBe(false)
+    expect(response.error).toBe("Notes must be 500 characters or less.")
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })
