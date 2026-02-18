@@ -79,6 +79,12 @@ const severityStyle: Record<ProactiveSignal["severity"], string> = {
   critical: "border-rose-200 bg-rose-50 text-rose-700",
 }
 
+const getUncertaintyNotice = (uncertaintyMessages: string[] | undefined): string | null => {
+  if (!Array.isArray(uncertaintyMessages) || uncertaintyMessages.length === 0) return null
+  const first = uncertaintyMessages[0]?.trim()
+  return first ? `Mode degrade: ${first}` : null
+}
+
 export function StockAnalysisPanel({ className }: StockAnalysisPanelProps) {
   const { stockActions } = usePortfolio()
   const [context, setContext] = useState<StockAnalysisContextSnapshot>(buildStockAnalysisContextSnapshot())
@@ -107,8 +113,13 @@ export function StockAnalysisPanel({ className }: StockAnalysisPanelProps) {
       if (!result.success || !result.data) return
 
       const responseAction = fallbackAction
+      const uncertaintyNotice = getUncertaintyNotice(result.data.uncertaintyMessages)
+      const summaryWithNotice = uncertaintyNotice
+        ? `${result.data.summary}\n\n⚠️ ${uncertaintyNotice}`
+        : result.data.summary
+
       if (!responseAction) {
-        setLastSummary(result.data.summary)
+        setLastSummary(summaryWithNotice)
         return
       }
 
@@ -122,7 +133,7 @@ export function StockAnalysisPanel({ className }: StockAnalysisPanelProps) {
         status: "executed" as const,
       }
       addAnalysisEntry(action, result.data.report, result.data.recommendation, responseAction.notes)
-      setLastSummary(result.data.summary)
+      setLastSummary(summaryWithNotice)
     },
     []
   )
@@ -171,11 +182,19 @@ export function StockAnalysisPanel({ className }: StockAnalysisPanelProps) {
         .flatMap((result) => result.data?.proactiveSignals ?? [])
         .slice(0, 12)
 
+      const firstUncertaintyNotice = refreshed
+        .map((result) => getUncertaintyNotice(result.data?.uncertaintyMessages))
+        .find((notice): notice is string => Boolean(notice))
+
       const merged = [...proactiveFromAnalysis, ...engineOutput.proactive]
       const deduped = Array.from(new Map(merged.map((signal) => [`${signal.symbol}-${signal.headline}`, signal])).values())
       setProactiveSignals(deduped.slice(0, 12))
       refreshContext()
-      setStatus(`Scan termine (${executedActions.length} trade(s) executes inspectes).`)
+      setStatus(
+        firstUncertaintyNotice
+          ? `Scan termine (${executedActions.length} trade(s) executes inspectes). ${firstUncertaintyNotice}`
+          : `Scan termine (${executedActions.length} trade(s) executes inspectes).`
+      )
     } catch (error) {
       console.error("Autonomous scan failed:", error)
       setStatus("Echec du scan autonome.")
@@ -238,7 +257,8 @@ export function StockAnalysisPanel({ className }: StockAnalysisPanelProps) {
       setProactiveSignals((current) => [...resultData.proactiveSignals, ...current].slice(0, 12))
       setFormState(defaultFormState)
       refreshContext()
-      setStatus("Analyse enregistree.")
+      const uncertaintyNotice = getUncertaintyNotice(resultData.uncertaintyMessages)
+      setStatus(uncertaintyNotice ? `Analyse enregistree. ${uncertaintyNotice}` : "Analyse enregistree.")
     } catch (error) {
       console.error(error)
       setStatus("Echec pendant l'analyse manuelle.")
