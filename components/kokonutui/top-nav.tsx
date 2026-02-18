@@ -21,7 +21,7 @@ export default function TopNav() {
   const criticalAlerts = ALERTS.filter((alert) => alert.status === "critique").length
 
   return (
-    <nav className="px-3 sm:px-6 flex items-center justify-between bg-transparent h-full">
+    <nav className="pl-16 pr-3 sm:pl-16 sm:pr-6 lg:px-6 flex items-center justify-between bg-transparent h-full">
       <div className="font-medium text-sm hidden sm:flex items-center gap-1 truncate max-w-[300px]">
         {breadcrumbs.map((item, index) => (
           <div key={item.label} className="flex items-center">
