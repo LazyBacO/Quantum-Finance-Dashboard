@@ -43,6 +43,8 @@ export interface StockAnalysisResponse {
     recommendation: StockAIRecommendation
     summary: string
     dataSource?: "twelvedata-live" | "massive-live" | "massive-delayed" | "synthetic"
+    uncertaintyMessages?: string[]
+    actionableInsights?: string[]
     entryId?: string
     entry?: {
       id: string
