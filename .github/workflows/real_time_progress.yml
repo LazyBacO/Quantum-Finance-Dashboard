@@ -102,8 +102,8 @@ jobs:
             echo "::warning::Skipping push: main is protected and requires PR-based updates."
           fi
 
-      - name: Comment progress on issue
-        if: env.OPENNOVA_ISSUE_NUMBER != ''
+      - name: Comment progress on issue (opt-in only)
+        if: github.event_name == 'workflow_dispatch' && env.OPENNOVA_ISSUE_NUMBER != '' && vars.OPENNOVA_PROGRESS_COMMENT_ENABLED == 'true'
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ env.OPENNOVA_ISSUE_NUMBER }}
