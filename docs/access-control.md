@@ -4,7 +4,7 @@ OpenNova-Finance est public, mais l’usage applicatif est protégé par OpenNov
 
 ## Variables d’environnement
 
-- `ACCESS_CONTROL_URL` : URL du service privé Access-Control (prod: `https://open-nova-access-control-cq7rjaii8-alexs-projects-9d55a1d6.vercel.app`)
+- `ACCESS_CONTROL_URL` : URL du service privé Access-Control (prod: `https://open-nova-access-control.vercel.app`)
 - `ACCESS_CONTROL_CLIENT_SECRET` : secret partagé pour `/api/validate`
 - `ACCESS_SESSION_SECRET` : secret de signature cookie session
 - `ACCESS_CONTROL_BYPASS=true` : mode local permissif (dev uniquement)
