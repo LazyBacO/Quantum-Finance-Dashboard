@@ -10,7 +10,7 @@ afterEach(() => {
 })
 
 describe("notification storage", () => {
-  it("restaure un store valide si notifications.json est corrompu", async () => {
+  it("retourne un fallback sans écraser le fichier si notifications.json est invalide", async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "opennova-notification-storage-"))
     process.chdir(tempRoot)
 
@@ -25,7 +25,7 @@ describe("notification storage", () => {
     expect(store.tasks.length).toBeGreaterThan(0)
     expect(store.alerts.length).toBeGreaterThan(0)
 
-    const repairedRaw = await readFile(path.join(dataDir, "notifications.json"), "utf-8")
-    expect(() => JSON.parse(repairedRaw)).not.toThrow()
+    const persistedRaw = await readFile(path.join(dataDir, "notifications.json"), "utf-8")
+    expect(persistedRaw).toBe("{invalid-json")
   })
 })
