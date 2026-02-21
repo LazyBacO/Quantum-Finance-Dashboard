@@ -242,14 +242,18 @@ export const readNotificationStore = async (): Promise<NotificationStore> => {
     const parsed = JSON.parse(raw) as unknown
     return normalizeStore(parsed)
   } catch {
-    return seedStore
+    // Important: do not overwrite on parse failures.
+    // A transient read during a concurrent write should not clobber persisted data.
+    return normalizeStore(seedStore)
   }
 }
 
 export const writeNotificationStore = async (store: NotificationStore): Promise<void> => {
   const validated = normalizeStore(store)
   await fs.mkdir(DATA_DIR, { recursive: true })
-  await fs.writeFile(DATA_PATH, JSON.stringify(validated, null, 2), "utf-8")
+  const tempPath = `${DATA_PATH}.${randomUUID()}.tmp`
+  await fs.writeFile(tempPath, JSON.stringify(validated, null, 2), "utf-8")
+  await fs.rename(tempPath, DATA_PATH)
 }
 
 export const addTask = async (input: TaskCreateInput) => {
