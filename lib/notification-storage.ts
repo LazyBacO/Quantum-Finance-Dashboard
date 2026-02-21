@@ -242,7 +242,9 @@ export const readNotificationStore = async (): Promise<NotificationStore> => {
     const parsed = JSON.parse(raw) as unknown
     return normalizeStore(parsed)
   } catch {
-    return seedStore
+    const fallback = normalizeStore(seedStore)
+    await writeNotificationStore(fallback)
+    return fallback
   }
 }
 
