@@ -8,8 +8,7 @@ export type AccessValidateResponse = {
 
 export async function validateAccessKeyWithService(rawKey: string): Promise<AccessValidateResponse> {
   const baseUrl = process.env.ACCESS_CONTROL_URL
-  const clientSecret =
-    process.env.ACCESS_CONTROL_CLIENT_SECRET || process.env.ACCESS_CLIENT_SECRET || ""
+  const clientSecret = process.env.ACCESS_CONTROL_CLIENT_SECRET || ""
 
   if (!baseUrl) {
     return { ok: false, error: "missing_access_service_url" }
