@@ -7,13 +7,14 @@ OpenNova-Finance est public, mais l’usage applicatif est protégé par OpenNov
 - `ACCESS_CONTROL_URL` : URL du service privé Access-Control (prod: `https://open-nova-access-control.vercel.app`)
 - `ACCESS_CONTROL_CLIENT_SECRET` : secret partagé pour `/api/validate` *(alias accepté: `ACCESS_CLIENT_SECRET`)*
 - `ACCESS_SESSION_SECRET` : secret de signature cookie session
+- `ACCESS_SESSION_TTL_MINUTES` : durée max session (défaut `15`)
 - `ACCESS_CONTROL_BYPASS=true` : mode local permissif (dev uniquement)
 
 ## Flux
 
 1. Utilisateur ouvre `/access` et soumet une clé
 2. `POST /api/access/exchange` appelle `OpenNova-Access-Control /api/validate`
-3. Si valide, cookie `onf_access` signé + `HttpOnly` est émis
+3. Si valide, cookie `onf_access` signé + `HttpOnly` est émis (cookie de session, sans persistance disque)
 4. `middleware.ts` bloque l’app si session absente/invalide/expirée
 5. `POST /api/access/logout` détruit la session
 
