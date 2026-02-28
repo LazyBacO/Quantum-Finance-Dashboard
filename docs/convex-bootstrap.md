@@ -12,6 +12,7 @@ This repository now includes a minimal Convex bootstrap to support real-time fea
 
 - `NEXT_PUBLIC_CONVEX_URL`: Convex deployment URL
 - `CONVEX_DEPLOY_KEY`: optional server-only admin key for privileged calls
+- `HEALTHCHECK_SECRET`: required header secret for `/api/health/convex`
 
 ## Usage example (server-side)
 

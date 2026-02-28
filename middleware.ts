@@ -11,6 +11,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/access") return true
   if (pathname.startsWith("/api/access/exchange")) return true
   if (pathname.startsWith("/api/access/logout")) return true
+  if (pathname === "/api/health/convex") return true
   return false
 }
 
