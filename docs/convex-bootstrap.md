@@ -23,6 +23,12 @@ const convex = createConvexHttpClient()
 // const result = await convex.query(api.health.ping, {})
 ```
 
+## Health endpoint
+
+- `GET /api/health/convex`
+- Returns `200` when `NEXT_PUBLIC_CONVEX_URL` is present.
+- Returns `503` when Convex is not configured yet.
+
 ## Security
 
 - Never expose `CONVEX_DEPLOY_KEY` to browser/client bundles.
