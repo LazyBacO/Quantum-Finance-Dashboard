@@ -108,6 +108,10 @@ TWELVEDATA_API_KEY=your_twelvedata_api_key
 TWELVEDATA_LIVE_DATA=true
 TWELVEDATA_API_BASE_URL=https://api.twelvedata.com
 TWELVEDATA_HTTP_TIMEOUT_MS=8000
+
+# Optionnel (active Convex pour real-time backend)
+NEXT_PUBLIC_CONVEX_URL=https://<your-deployment>.convex.cloud
+CONVEX_DEPLOY_KEY=<server-only-key>
 ```
 
 Astuce: depuis `Settings > Donnees de marche`, l'utilisateur peut remplacer les cles Massive et TwelveData a tout moment sans modifier le code.
