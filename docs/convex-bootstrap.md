@@ -28,6 +28,7 @@ const convex = createConvexHttpClient()
 - `GET /api/health/convex`
 - Returns `200` when `NEXT_PUBLIC_CONVEX_URL` is present.
 - Returns `503` when Convex is not configured yet.
+- Local quick check: `pnpm health:convex` (requires app running on port 3000).
 
 ## Security
 

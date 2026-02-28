@@ -16,7 +16,8 @@
     "vitest": "node scripts/run-vitest.mjs",
     "test": "node scripts/run-vitest.mjs run",
     "test:watch": "node scripts/run-vitest.mjs",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "health:convex": "node -e \"fetch('http://localhost:3000/api/health/convex').then(async r=>{console.log(r.status);console.log(await r.text())}).catch(e=>{console.error(e);process.exit(1)})\""
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
