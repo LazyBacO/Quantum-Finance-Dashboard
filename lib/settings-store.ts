@@ -107,15 +107,16 @@ const readStorage = (): SettingsData => {
     return defaultSettings
   }
 
-  const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
-  if (!raw) {
-    return defaultSettings
-  }
-
   try {
+    const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
+    if (!raw) {
+      return defaultSettings
+    }
+
     const parsed = JSON.parse(raw) as Partial<SettingsData>
     return normalize(parsed)
   } catch {
+    // localStorage can throw in restricted contexts (private mode, blocked storage, sandboxed WebViews)
     return defaultSettings
   }
 }
@@ -133,5 +134,9 @@ export const saveSettings = async (settings: SettingsData): Promise<void> => {
     return
   }
 
-  window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(normalize(settings)))
+  try {
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(normalize(settings)))
+  } catch {
+    // Ignore quota/security storage failures to avoid breaking settings UI interactions.
+  }
 }
