@@ -1,24 +1,28 @@
 import { defaultNotificationPreferences, type NotificationPreferences } from "@/lib/notification-types"
 
-const STORAGE_KEY = "kokonutui.notification-preferences"
+export const NOTIFICATION_PREFERENCES_STORAGE_KEY = "kokonutui.notification-preferences"
+
+const normalizePreferences = (value: Partial<NotificationPreferences>): NotificationPreferences => ({
+  email:
+    typeof value.email === "boolean" ? value.email : defaultNotificationPreferences.email,
+  push: typeof value.push === "boolean" ? value.push : defaultNotificationPreferences.push,
+})
 
 const readPreferences = (): NotificationPreferences => {
   if (typeof window === "undefined") {
     return defaultNotificationPreferences
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (!raw) {
-    return defaultNotificationPreferences
-  }
-
   try {
-    const parsed = JSON.parse(raw) as Partial<NotificationPreferences>
-    return {
-      ...defaultNotificationPreferences,
-      ...parsed,
+    const raw = window.localStorage.getItem(NOTIFICATION_PREFERENCES_STORAGE_KEY)
+    if (!raw) {
+      return defaultNotificationPreferences
     }
+
+    const parsed = JSON.parse(raw) as Partial<NotificationPreferences>
+    return normalizePreferences(parsed)
   } catch {
+    // localStorage access can fail in private mode, blocked storage, or embedded webviews.
     return defaultNotificationPreferences
   }
 }
@@ -34,5 +38,12 @@ export const saveNotificationPreferences = async (
     return
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences))
+  try {
+    window.localStorage.setItem(
+      NOTIFICATION_PREFERENCES_STORAGE_KEY,
+      JSON.stringify(normalizePreferences(preferences)),
+    )
+  } catch {
+    // Ignore storage write failures to keep settings interactions non-blocking.
+  }
 }
